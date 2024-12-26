@@ -1,0 +1,66 @@
+<html lang="en">
+    <head>
+        <meta charset=""UTF-8">
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <title>{{ title }}</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    </head>
+    <body>
+        <center>
+            <h1>Pact</h1>
+            <h2>Marriage Pact for Spotify</h2>
+
+           
+            <button id="loginButton">Login</button>
+            
+            <div id="loginForm" style="display: none;">
+                <h2>Enter your Stanford Email</h2>
+                <form id="emailForm">
+                    <input type="email" id="email" name="email" required>
+                    <button type="submit">Submit</button>
+                </form>
+                <p id="message"></p>
+            </div>
+
+            <div id="passForm" style="display: none;">
+                <h2>Enter your password</h2>
+                <form id="passwordForm">
+                    <input type="password" id="password" name="password" required>
+                    <button type="submit">Submit</button>
+                </form>
+                <p id="message"></p>
+            </div>
+
+            
+        </center>
+
+        <script>
+            $(document).ready(function() {
+                $('#loginButton').click(function() {
+                    $(this).hide();
+                    $('#loginForm').show();
+                });
+
+                $('#emailForm').submit(function(e) {
+                    e.preventDefault();
+                    $.ajax({
+                        url: '/login_school',
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        success: function(response) {
+                            $('#message').text(response.message);
+                            if (response.success) {
+                                $('#emailForm').hide();
+                            }
+                        },
+                        error: function() {
+                            $('#message').text('An error occurred. Please try again.');
+                        }
+                    });
+                });
+
+                
+            });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,56 @@
+<html>
+    <head>
+
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <title>{{ title }}</title>
+    </head>
+    <body>
+
+       <script>
+            function showContent(id) {
+            // set all of the other ones to invisible
+            for (let i = 0; i < document.querySelectorAll(".receiptContainer").length; i++) {
+                document.querySelectorAll(".receiptContainer")[i].style.display = "none"
+            }
+            document.getElementById(id).style.display = 'inline-block'
+            document.getElementById('downloadPicButton').style.display = 'inline-block'
+            activeReceipt = id
+        }
+       </script>
+
+        <div>
+            <center>
+                <h1>Pact</h1>
+                <h2>Marriage Pact for Spotify</h2>
+                <p>This is the receipt page.</p>
+            </center>
+        </div>
+
+        <div style="width: 100%; height: auto" class="receiptContainerWrapper">
+            <center>
+                {{ receiptContainer(user_display_name, short_term['items'], 'short_term_receipt', 'LAST MONTH') }}
+                {{ receiptContainer(user_display_name, medium_term['items'], 'medium_term_receipt', 'LAST 6 MONTHS') }}
+                {{ receiptContainer(user_display_name, long_term['items'], 'long_term_receipt', 'ALL TIME') }}
+            </center>
+        </div>
+
+        <div style="width: 100%; height: auto" class="buttons">
+            <center>
+                <div>
+                    <button onclick="showContent('short_term_receipt')" class="generatePicButton">Short Term Receipt</button>
+                    <button onclick="showContent('medium_term_receipt')" class="generatePicButton">Medium Term Receipt</button>
+                    <button onclick="showContent('long_term_receipt')" class="generatePicButton">Long Term Receipt</button>
+                </div>
+            </center>
+        </div>
+
+        <div style="width: 100%; height: auto" class="receiptContainerWrapper">
+            <center>
+                {{ receiptContainer(user_display_name, short_term['items'], 'short_term_receipt', 'LAST MONTH') }}
+                {{ receiptContainer(user_display_name, medium_term['items'], 'medium_term_receipt', 'LAST 6 MONTHS') }}
+                {{ receiptContainer(user_display_name, long_term['items'], 'long_term_receipt', 'ALL TIME') }}
+            </center>
+        </div>
+    
+    </body>
+</html>
