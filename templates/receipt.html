@@ -1,10 +1,13 @@
 <html>
     <head>
-
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <title>{{ title }}</title>
     </head>
     <body>
+
+        {% from "receiptContainer.html" import receiptContainer with context %}
 
        <script>
             function showContent(id) {
@@ -22,7 +25,7 @@
             <center>
                 <h1>Pact</h1>
                 <h2>Marriage Pact for Spotify</h2>
-                <p>This is the receipt page.</p>
+                <p> {{ title }} </p>
             </center>
         </div>
 

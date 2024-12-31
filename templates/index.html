@@ -12,23 +12,25 @@
 
            
             <button id="loginButton">Login</button>
+            <button id="registerButton">Register</button>
             
             <div id="loginForm" style="display: none;">
-                <h2>Enter your Stanford Email</h2>
+                <h2>Enter your Stanford Email and password</h2>
                 <form id="emailForm">
                     <input type="email" id="email" name="email" required>
-                    <button type="submit">Submit</button>
+                    <input type="password" id="password" name="password" required>
+                    <button type="submit">Log In</button>
                 </form>
                 <p id="message"></p>
             </div>
 
-            <div id="passForm" style="display: none;">
-                <h2>Enter your password</h2>
-                <form id="passwordForm">
-                    <input type="password" id="password" name="password" required>
-                    <button type="submit">Submit</button>
+            <div id="registerForm" style="display: none;">
+                <h2> Enter your Stanford .edu email</h2>
+                <form id="newEmailForm">
+                    <input type="email" id="registerEmail" name="registerEmail" required>
+                    <button type="submit">Register</button>
                 </form>
-                <p id="message"></p>
+                <p id="registerMessage"></p>
             </div>
 
             
@@ -38,26 +40,62 @@
             $(document).ready(function() {
                 $('#loginButton').click(function() {
                     $(this).hide();
+                    $('#registerForm').hide();       
+                    $('#registerButton').show;
                     $('#loginForm').show();
+                });
+
+                $('#registerButton').click(function() {
+                    $(this).hide();
+                    $('#loginForm').hide();                    
+                    $('#loginButton').show;
+                    $('#registerForm').show();
                 });
 
                 $('#emailForm').submit(function(e) {
                     e.preventDefault();
+                    var formData = $(this).serialize();
+                    console.log("Form data:", formData);
                     $.ajax({
-                        url: '/login_school',
+                        url: '/login',
                         type: 'POST',
                         data: $(this).serialize(),
                         success: function(response) {
                             $('#message').text(response.message);
                             if (response.success) {
                                 $('#emailForm').hide();
+                                window.location.replace('/form');
+
                             }
                         },
                         error: function() {
-                            $('#message').text('An error occurred. Please try again.');
+                            $('#message').text('An error occurred. Please try again!!');
                         }
                     });
                 });
+
+                $('#newEmailForm').submit(function(e) {
+                    e.preventDefault();
+                    var formData = $(this).serialize();
+                    console.log("Form data:", formData);
+                    $.ajax({
+                        url: '/register',
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        success: function(response) {
+                            $('#registerMessage').text(response.message);
+                            if (response.success) {
+                                $('#newEmailForm').hide();
+                            }
+                        },
+                        error: function() {
+                            $('#registerMessage').text('An error occurred. Please try again!');
+                        }
+                    });
+                });
+
+
+
 
                 
             });
