@@ -5,6 +5,7 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 import os
 import time 
+import json
 from datetime import datetime
 from time import gmtime, strftime
 from flask_wtf import FlaskForm
@@ -15,8 +16,6 @@ from pymongo.server_api import ServerApi
 
 
 # database set up
-
-
 uri = "mongodb+srv://maanit:We'reall50%25banana@tangle.h9qzr.mongodb.net/?retryWrites=true&w=majority&appName=tangle"
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
@@ -92,11 +91,27 @@ def register():
         msg = Message('Confirm Your Email', sender='your_email@gmail.com', recipients=[email])
         msg.body = f'Click the following link to confirm your email: {confirm_url}'
         mail.send(msg)
+        print("sending reg!")
         return jsonify({'success': True, 'message': 'Please check your email to confirm your account.'})
     else:
         return jsonify({'success': False, 'message': 'Account already exists. Please log in.'})
 
-    
+@app.route('/forgot', methods=['GET', 'POST'])
+def forgot_password():
+    email = request.form.get('forgotEmail')
+    if not email.endswith('@stanford.edu'):
+        return jsonify({'success': False, 'message': 'Please enter your Stanford email address.'})
+    if not coll.find_one({'_email': email}):
+        return jsonify({'success': False, 'message': 'Email not found. Register for new account.'})
+    else:
+        token = serializer.dumps(email, salt='email-confirm')
+        confirm_url = url_for('confirm_email', token=token, _external=True)
+        msg = Message('Confirm Your Email', sender='your_email@gmail.com', recipients=[email])
+        msg.body = f'Click the following link to reset your password: {confirm_url}'
+        mail.send(msg)
+        print("sending!")
+        return jsonify({'success': True, 'message': 'Please check your email for password reset link.'})
+
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
     try:
@@ -104,18 +119,33 @@ def confirm_email(token):
     except:
         return 'The confirmation link is invalid or has expired.'
     
-    coll.insert_one({ "_email": email})
+    print(email)
+    existing_user = coll.find_one({"_email": email})
+    if existing_user:
+        # Update the existing user
+        coll.update_one(
+            {"_email": email},
+            {"$set": {"confirmed": True, "confirmed_on": datetime.now()}}
+        )
+    else:
+        # Insert a new user
+        coll.insert_one({
+            "_email": email,
+            "confirmed": True,
+            "confirmed_on": datetime.now()
+        })
     return render_template('set_password.html', email=email)
 
 @app.route('/set_password/', methods=['POST'])
 def set_password():
-    email = request.form.get('email') 
+    email = request.form.get('setEmail') 
+    print(email)
     if (coll.find_one({'_email': email})):
         password = request.form.get('password')
         coll.update_one({ "_email": email },
-            { "$set": { "_password": password, "_stored": 0 }  }
+            { "$set": { "_password": password }  }
         )
-        return jsonify({'success': True, 'message': 'Account created successfully!'})
+        return jsonify({'success': True, 'message': 'Password set!'})
     else:
         return jsonify({'success': False, 'message': 'Please enter your provided email address.'})
 
@@ -148,15 +178,56 @@ def login():
 
 @app.route("/form")
 def form():
-    return render_template('form.html')
+    if not coll.find_one({'_email': globals()["USER"], '_stored': 1}):
+        return render_template('form.html')
+    else:
+        return redirect(url_for("storeData", _external=True))
+
+
+@app.route('/webhook', methods=['GET', 'POST'])
+def jotform_webhook():
+
+    if request.method == 'GET':
+        return "Webhook URL is valid", 200
+    elif request.method == 'POST':
+        raw_data = request.form.get('rawRequest')
+        data = json.loads(raw_data)
+        print(data)
+
+        # Process and upload data to MongoDB
+        coll.update_one(
+        { "_email": globals()["USER"] },
+        { "$set": { 
+            "_firstname": data["q1_name"]['first'], 
+            "_lastname": data["q1_name"]['last'],
+            "_year": data["q2_year"], 
+            "_gender": data["q3_gender"], 
+            "_friendpartner": data["q4_areYou"], 
+            "_partner": data["q5_partner"], 
+            "_redflag": data["q11_redflag"] 
+        }},
+        upsert=True
+        )
+
+        return jsonify({"redirectUrl": url_for('loginSpotify')})
+
+
+
+
+   
+
+
+
 
 @app.route("/loginSpotify")
 def loginSpotify():
 
- #   if not coll.find_one({'_email': globals()["USER"], '_stored': 1}):
+    if not coll.find_one({'_email': globals()["USER"], '_stored': 1}):
         sp_oauth = create_spotify_oauth()
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
+    else:
+        return redirect(url_for("storeData", _external=True))
 
 
 @app.route("/redirectPage")
@@ -174,13 +245,12 @@ def get_token():
 
 @app.route("/storeData")
 def storeData():
- 
+    current_user_name = globals()["USER"]
     if not globals()["STORED"]:
         user_token = get_token()
         sp = spotipy.Spotify(
             auth=user_token['access_token']
         )
-        current_user_name = sp.current_user()['display_name']
         short_tracks_temp = sp.current_user_top_tracks(
             limit=10,
             time_range=SHORT_TERM,
@@ -236,10 +306,11 @@ def storeData():
         coll.update_one({ "_email": globals()["USER"] },
             { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
         )
+
         
-    short_term = coll.find_one({"_email": USER}, {"_short_tracks_obj": 1, "_id": 0})
-    medium_term = coll.find_one({"_email": USER}, {"_med_tracks_obj": 1, "_id": 0})
-    long_term = coll.find_one({"_email": USER}, {"_long_tracks_obj": 1, "_id": 0})
+    short_term = coll.find_one({"_email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
+    medium_term = coll.find_one({"_email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
+    long_term = coll.find_one({"_email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
     return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify - now sit back and relax!", currentTime=gmtime())
 
 @app.template_filter('strftime')

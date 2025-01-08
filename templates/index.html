@@ -12,8 +12,11 @@
 
            
             <button id="loginButton">Login</button>
-            <button id="registerButton">Register</button>
             
+            <button id="registerButton">Register</button>
+
+
+
             <div id="loginForm" style="display: none;">
                 <h2>Enter your Stanford Email and password</h2>
                 <form id="emailForm">
@@ -34,23 +37,62 @@
             </div>
 
             
+            <button id="forgotButton" style="display: none;">Forgot Password?</button>
+
+            <div id="forgotForm" style="display: none;">
+                <h2> Enter your Stanford .edu email</h2>
+                <form id="forgotPassForm">
+                    <input type="email" id="forgotEmail" name="forgotEmail" required>
+                    <button type="submit">Send Password Reset Email</button>
+                </form>
+                <p id="forgotMessage"></p>
+            </div>
+           
+            
+
+            
         </center>
 
         <script>
             $(document).ready(function() {
                 $('#loginButton').click(function() {
                     $(this).hide();
-                    $('#registerForm').hide();       
-                    $('#registerButton').show;
+                    $('#registerForm').hide();  
+                    $('#message').text("");
+                    $('#registerMessage').text(""); 
+                    $('#forgotMessage').text("");    
+                    $('#registerButton').show();
                     $('#loginForm').show();
+                    $('#forgotButton').hide();
                 });
 
                 $('#registerButton').click(function() {
                     $(this).hide();
-                    $('#loginForm').hide();                    
-                    $('#loginButton').show;
+                    $('#loginForm').hide();   
+                    $('#message').text("");
+                    $('#forgotForm').hide();  
+                    $('#forgotMessage').text("");
+                    $('#forgotButton').hide();                 
+                    $('#loginButton').show();
                     $('#registerForm').show();
+                    $('#registerMessage').text("");
+
                 });
+
+                $('#forgotButton').click(function() {
+                    $(this).hide();
+                    $('#loginForm').hide();                   
+                    $('#loginButton').show();
+                    $('#registerForm').hide();
+                    $('#registerButton').show();
+                    $('#forgotForm').show();
+                    $('#message').text("");
+                    $('#registerMessage').text(""); 
+                    $('#forgotMessage').text(""); 
+
+                });
+
+
 
                 $('#emailForm').submit(function(e) {
                     e.preventDefault();
@@ -65,7 +107,9 @@
                             if (response.success) {
                                 $('#emailForm').hide();
                                 window.location.replace('/form');
-
+                            }
+                            else if (response.message == "Incorrect password, try again.") {
+                                $('#forgotButton').show();
                             }
                         },
                         error: function() {
@@ -90,6 +134,23 @@
                         },
                         error: function() {
                             $('#registerMessage').text('An error occurred. Please try again!');
+                        }
+                    });
+                });
+
+                $('#forgotPassForm').submit(function(e) {
+                    e.preventDefault();
+                    var formData = $(this).serialize();
+                    console.log("Form data:", formData);
+                    $.ajax({
+                        url: '/forgot',
+                        type: 'POST',
+                        data: $(this).serialize(),
+                        success: function(response) {
+                            $('#forgotMessage').text(response.message);
+                        },
+                        error: function() {
+                            $('#forgotMessage').text('An error occurred. Please try again!');
                         }
                     });
                 });
