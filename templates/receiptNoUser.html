@@ -1,0 +1,34 @@
+<html lang="en">
+
+
+    <head>
+        <meta charset=""UTF-8">
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+        <title>{{ title }}</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    </head>
+
+
+    <body>
+
+        <nav class="top-nav">
+            <a href="/" class="nav-button">Home</a>
+            <a href="/about" class="nav-button">About</a>
+            <a href="/receipts" class="nav-button">Receipts</a>
+            <a href="/match" class="nav-button">Match</a>
+        </nav>
+
+        <div class="video-background">
+            <video muted loop autoplay="autoplay" id="myVideo">
+                <source src="static/real_homepage.mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <div class="verticalCenter">
+            <h3>You must login before seeing your receipts.</h3>
+            <button class="homepageButton" onclick="location.href = '/';">Back to Login</button>
+        </div>
+         
+    </body>
+</html>

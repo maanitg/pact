@@ -245,73 +245,76 @@ def get_token():
 
 @app.route("/receipts")
 def receipts():
-    current_user_name = globals()["USER"]
-    if not globals()["STORED"]:
-        user_token = get_token()
-        sp = spotipy.Spotify(
-            auth=user_token['access_token']
-        )
-        short_tracks_temp = sp.current_user_top_tracks(
-            limit=10,
-            time_range=SHORT_TERM,
-        )
-        medium_tracks_temp = sp.current_user_top_tracks(
-            limit=10,
-            time_range=MEDIUM_TERM,
-        )
-        long_tracks_temp = sp.current_user_top_tracks(
-            limit=10,
-            time_range=LONG_TERM,
-        )
-        medium_art_temp = sp.current_user_top_artists(
-            limit=20,
-            time_range=MEDIUM_TERM,
-        )
-        long_art_temp = sp.current_user_top_artists(
-            limit=20,
-            time_range=LONG_TERM,
-        )
-        short_tracks = []
-        for track in short_tracks_temp['items']:
-            short_tracks.append(track['name'])
-        medium_tracks = []
-        for track in medium_tracks_temp['items']:
-            medium_tracks.append(track['name'])
-        long_tracks = []
-        for track in long_tracks_temp['items']:
-            long_tracks.append(track['name'])
-        medium_art = []
-        for artist in medium_art_temp['items']:
-            medium_art.append(artist['name'])
-        long_art = []
-        for artist in long_art_temp['items']:
-            long_art.append(artist['name'])
+    if globals()["USER"] is None:
+        return render_template('receiptNoUser.html');
+    else:
+        current_user_name = globals()["USER"]
+        if not globals()["STORED"]:
+            user_token = get_token()
+            sp = spotipy.Spotify(
+                auth=user_token['access_token']
+            )
+            short_tracks_temp = sp.current_user_top_tracks(
+                limit=10,
+                time_range=SHORT_TERM,
+            )
+            medium_tracks_temp = sp.current_user_top_tracks(
+                limit=10,
+                time_range=MEDIUM_TERM,
+            )
+            long_tracks_temp = sp.current_user_top_tracks(
+                limit=10,
+                time_range=LONG_TERM,
+            )
+            medium_art_temp = sp.current_user_top_artists(
+                limit=20,
+                time_range=MEDIUM_TERM,
+            )
+            long_art_temp = sp.current_user_top_artists(
+                limit=20,
+                time_range=LONG_TERM,
+            )
+            short_tracks = []
+            for track in short_tracks_temp['items']:
+                short_tracks.append(track['name'])
+            medium_tracks = []
+            for track in medium_tracks_temp['items']:
+                medium_tracks.append(track['name'])
+            long_tracks = []
+            for track in long_tracks_temp['items']:
+                long_tracks.append(track['name'])
+            medium_art = []
+            for artist in medium_art_temp['items']:
+                medium_art.append(artist['name'])
+            long_art = []
+            for artist in long_art_temp['items']:
+                long_art.append(artist['name'])
 
-        medium_alb = []
-        for track in medium_tracks_temp['items']:
-            medium_alb.append(track['album'])
-        long_alb = []
-        for track in long_tracks_temp['items']:
-            long_alb.append(track['album'])
+            medium_alb = []
+            for track in medium_tracks_temp['items']:
+                medium_alb.append(track['album'])
+            long_alb = []
+            for track in long_tracks_temp['items']:
+                long_alb.append(track['album'])
 
-        medium_gen = []
-        for artist in medium_art_temp['items']:
-            medium_gen.extend(artist['genres'])
-        medium_gen = sorted(list(set(medium_gen)))
-        long_gen = []
-        for artist in long_art_temp['items']:
-            long_gen.extend(artist['genres'])
-        long_gen = sorted(list(set(long_gen)))
-        
-        coll.update_one({ "_email": globals()["USER"] },
-            { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
-        )
+            medium_gen = []
+            for artist in medium_art_temp['items']:
+                medium_gen.extend(artist['genres'])
+            medium_gen = sorted(list(set(medium_gen)))
+            long_gen = []
+            for artist in long_art_temp['items']:
+                long_gen.extend(artist['genres'])
+            long_gen = sorted(list(set(long_gen)))
+            
+            coll.update_one({ "_email": globals()["USER"] },
+                { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
+            )
 
-        
-    short_term = coll.find_one({"_email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
-    medium_term = coll.find_one({"_email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
-    long_term = coll.find_one({"_email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
-    return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
+            
+        short_term = coll.find_one({"_email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
+        medium_term = coll.find_one({"_email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
+        long_term = coll.find_one({"_email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
+        return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
 
 @app.route("/about")
 def about():

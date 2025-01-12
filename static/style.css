@@ -105,6 +105,7 @@
   
   body, html {
     margin: 0;
+    padding-top: 80px;
     padding: 0;
     height: 100%;
     width: 100%;
@@ -262,11 +263,16 @@ p, table {
 }
 
 h6 {
-  padding-top: 70px; /* Adjust this value based on the height of your nav bar */
+  font-weight: 200;
+  padding-top: 0px;
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-  font-size: 14px;
+  font-size: 1vw;
   line-height: 1.42857143;
   color: black;
+  text-align: center;
+  position: relative;
+
+
 }
 
 
@@ -324,15 +330,6 @@ table {
   z-index: -2; /* Place it behind other elements but in front of the video */
 }
 
-.white-overlay {
-  position: fixed;
-  top: 25vh;
-  left: 0%; /* Start at 1/8 of the viewport width */
-  width: 100%; /* Cover 5/8 of the viewport width */
-  height: 75vh; /* Cover full height */
-  background-color: rgba(255, 255, 255, 1); /* Adjust opacity as needed */
-  z-index: -2; /* Place it behind other elements but in front of the video */
-}
 
 .video-background video {
   width: 100%;
@@ -419,11 +416,37 @@ input:focus, select:focus, textarea:focus {
   font-size: 16px;
   line-height: 1.6;
   color: #333;
-  max-width: 800px;
+  max-width: 60vw;
   margin: 0 auto;
-  padding: 20px;
-  background-color: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 50px;
+  padding: 30px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 
+    0 10px 20px rgba(0, 0, 0, 0.05),
+    0 6px 6px rgba(0, 0, 0, 1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.aboutContainer::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  height: 5px;
+  background: linear-gradient(90deg, #3498db, #2ecc71, #e74c3c);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+
+
+.aboutContainer:hover::before {
+  opacity: 1;
 }
 
 
@@ -444,6 +467,7 @@ label {
   padding: 20px 0;
   background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent background */
   z-index: 1000; /* Ensure it's above other content */
+  margin-bottom: 10vh;
 }
 
 .nav-button {
