@@ -206,6 +206,59 @@ h5 {
   margin-bottom: 1vh;
 }
 
+/* Mobile-specific styles */
+@media screen and (max-width: 768px) {
+  .top-nav {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav-button {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 5px;
+  }
+
+  .verticalCenter {
+    width: 90%;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 2.5em;
+    width: 100%;
+  }
+
+  h5 {
+    font-size: 1.2em;
+    width: 100%;
+  }
+
+  .button-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .homepageButton {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  #loginForm, #registerForm, #forgotForm {
+    width: 100%;
+  }
+
+  input[type="email"], input[type="password"] {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  button[type="submit"] {
+    width: 100%;
+  }
+}
+
 
 h2 {
   font-family: 'Playfair Display', serif;
