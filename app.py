@@ -56,7 +56,9 @@ MATCHED = False
 mail = Mail(app)
 serializer = (URLSafeTimedSerializer(app.config['SECRET_KEY']))
 
-
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
 
 def get_password_by_email(email):
     # Find the document with the given email
