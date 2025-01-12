@@ -366,6 +366,19 @@ table {
   margin-bottom: 50vh;
 }
 
+.verticalCenter2 {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Changed from center to flex-start */
+  align-items: center;
+  height: 100vh;
+  z-index: 1;
+  position: relative;
+  padding-top: 7vh; /* This pushes the content down by 1/3 of the viewport height */
+  padding-bottom: 7vh;
+  margin-bottom: 50vh;
+}
+
 form {
   display: flex;
   flex-direction: column;
