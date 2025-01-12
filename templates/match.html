@@ -5,7 +5,6 @@
         <meta charset=""UTF-8">
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-        <title>{{ title }}</title>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     </head>
 
@@ -31,166 +30,15 @@
 
  
         <center>
-            <div class="verticalCenter">
-                <h1>WAVELENGTH</h1>
-                <h5>Stanford's Marriage Pact for Music Taste.</h5>
-                <div class="button-container">
-                    <button class="homepageButton" id="loginButton">Login with Stanford Email</button>
-                    <button class="homepageButton" id="registerButton">Register with Stanford Email</button>
-                    <button id="forgotButton" style="display: none;">Forgot Password?</button>
-                </div>
-            
-           
-            
-
-
-
-                <div id="loginForm" style="display: none;">
-                    <h3>Enter your Stanford Email and password.</h3>
-                    <form id="emailForm">
-                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
-                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                        <button type="submit">Log In</button>
-                    </form>
-                    <p id="message"></p>
-                </div>
-
-                <div id="registerForm" style="display: none;">
-                    <h3> Enter your Stanford .edu email.</h3>
-                    <form id="newEmailForm">
-                        <input type="email" id="registerEmail" name="registerEmail" placeholder="Enter your email" required>
-                        <button type="submit">Register</button>
-                    </form>
-                    <p id="registerMessage"></p>
-                </div>
-
+            <div class="verticalCenter2">
                 
-
-
-                <div id="forgotForm" style="display: none;">
-                    <h3> Enter your Stanford .edu email.</h3>
-                    <form id="forgotPassForm">
-                        <input type="email" id="forgotEmail" name="forgotEmail" placeholder="Enter your email" required>
-                        <button type="submit">Send Password Reset Email</button>
-                    </form>
-                    <p id="forgotMessage"></p>
-                </div>
-
+                <h3>Matches are coming...</h3>
+         
             </div>
-           
-            
-
             
         </center>
 
-        <script>
-            $(document).ready(function() {
-                $('#loginButton').click(function() {
-                    $(this).hide();
-                    $('#registerForm').hide();  
-                    $('#message').text("");
-                    $('#registerMessage').text(""); 
-                    $('#forgotMessage').text("");    
-                    $('#registerButton').show();
-                    $('#loginForm').show();
-                    $('#forgotButton').hide();
-                    $('#forgotForm').hide();
-                });
-
-                $('#registerButton').click(function() {
-                    $(this).hide();
-                    $('#loginForm').hide();   
-                    $('#message').text("");
-                    $('#forgotForm').hide();  
-                    $('#forgotMessage').text("");
-                    $('#forgotButton').hide();                 
-                    $('#loginButton').show();
-                    $('#registerForm').show();
-                    $('#registerMessage').text("");
-
-                });
-
-                $('#forgotButton').click(function() {
-                    $(this).hide();
-                    $('#loginForm').hide();                   
-                    $('#loginButton').show();
-                    $('#registerForm').hide();
-                    $('#registerButton').show();
-                    $('#forgotForm').show();
-                    $('#message').text("");
-                    $('#registerMessage').text(""); 
-                    $('#forgotMessage').text(""); 
-
-                });
-
-
-
-                $('#emailForm').submit(function(e) {
-                    e.preventDefault();
-                    var formData = $(this).serialize();
-                    console.log("Form data:", formData);
-                    $.ajax({
-                        url: '/login',
-                        type: 'POST',
-                        data: $(this).serialize(),
-                        success: function(response) {
-                            $('#message').text(response.message);
-                            if (response.success) {
-                                $('#emailForm').hide();
-                                window.location.replace('/form');
-                            }
-                            else if (response.message == "Incorrect password, try again.") {
-                                $('#forgotButton').show();
-                            }
-                        },
-                        error: function() {
-                            $('#message').text('An error occurred. Please try again!!');
-                        }
-                    });
-                });
-
-                $('#newEmailForm').submit(function(e) {
-                    e.preventDefault();
-                    var formData = $(this).serialize();
-                    console.log("Form data:", formData);
-                    $.ajax({
-                        url: '/register',
-                        type: 'POST',
-                        data: $(this).serialize(),
-                        success: function(response) {
-                            $('#registerMessage').text(response.message);
-                            if (response.success) {
-                                $('#newEmailForm').hide();
-                            }
-                        },
-                        error: function() {
-                            $('#registerMessage').text('An error occurred. Please try again!');
-                        }
-                    });
-                });
-
-                $('#forgotPassForm').submit(function(e) {
-                    e.preventDefault();
-                    var formData = $(this).serialize();
-                    console.log("Form data:", formData);
-                    $.ajax({
-                        url: '/forgot',
-                        type: 'POST',
-                        data: $(this).serialize(),
-                        success: function(response) {
-                            $('#forgotMessage').text(response.message);
-                        },
-                        error: function() {
-                            $('#forgotMessage').text('An error occurred. Please try again!');
-                        }
-                    });
-                });
-
-
-
-
-                
-            });
-        </script>
+       
+    
     </body>
 </html>

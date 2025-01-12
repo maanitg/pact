@@ -52,6 +52,7 @@ app.secret_key = SECRET_KEY
 
 USER = None
 STORED = False
+MATCHED = False
 mail = Mail(app)
 serializer = (URLSafeTimedSerializer(app.config['SECRET_KEY']))
 
@@ -319,6 +320,13 @@ def receipts():
 @app.route("/about")
 def about():
     return render_template('about.html')
+
+@app.route("/match")
+def match():
+    if not globals()["MATCHED"]:
+        return render_template('match.html')
+    else:
+        return render_template('match.html')
 
 
 
