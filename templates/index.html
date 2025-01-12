@@ -1,51 +1,81 @@
 <html lang="en">
+
+
     <head>
         <meta charset=""UTF-8">
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
         <title>{{ title }}</title>
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     </head>
+
+
     <body>
+
+        <nav class="top-nav">
+            <a href="/" class="nav-button">Home</a>
+            <a href="/about" class="nav-button">About</a>
+            <a href="/receipts" class="nav-button">Receipts</a>
+            <a href="/match" class="nav-button">Match</a>
+        </nav>
+
+        <div class="video-background">
+            <video muted loop autoplay="autoplay" id="myVideo">
+                <source src="static/real_homepage.mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <div class="dark-overlay"></div>
+
+
+ 
         <center>
-            <h1>Pact</h1>
-            <h2>Marriage Pact for Spotify</h2>
-
+            <div class="verticalCenter">
+                <h1>WAVELENGTH</h1>
+                <h5>Stanford's Marriage Pact for Music Taste.</h5>
+                <div class="button-container">
+                    <button class="homepageButton" id="loginButton">Login with Stanford Email</button>
+                    <button class="homepageButton" id="registerButton">Register with Stanford Email</button>
+                    <button id="forgotButton" style="display: none;">Forgot Password?</button>
+                </div>
+            
            
-            <button id="loginButton">Login</button>
             
-            <button id="registerButton">Register</button>
 
 
 
-            <div id="loginForm" style="display: none;">
-                <h2>Enter your Stanford Email and password</h2>
-                <form id="emailForm">
-                    <input type="email" id="email" name="email" required>
-                    <input type="password" id="password" name="password" required>
-                    <button type="submit">Log In</button>
-                </form>
-                <p id="message"></p>
-            </div>
+                <div id="loginForm" style="display: none;">
+                    <h3>Enter your Stanford Email and password.</h3>
+                    <form id="emailForm">
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <button type="submit">Log In</button>
+                    </form>
+                    <p id="message"></p>
+                </div>
 
-            <div id="registerForm" style="display: none;">
-                <h2> Enter your Stanford .edu email</h2>
-                <form id="newEmailForm">
-                    <input type="email" id="registerEmail" name="registerEmail" required>
-                    <button type="submit">Register</button>
-                </form>
-                <p id="registerMessage"></p>
-            </div>
+                <div id="registerForm" style="display: none;">
+                    <h3> Enter your Stanford .edu email.</h3>
+                    <form id="newEmailForm">
+                        <input type="email" id="registerEmail" name="registerEmail" placeholder="Enter your email" required>
+                        <button type="submit">Register</button>
+                    </form>
+                    <p id="registerMessage"></p>
+                </div>
 
-            
-            <button id="forgotButton" style="display: none;">Forgot Password?</button>
+                
 
-            <div id="forgotForm" style="display: none;">
-                <h2> Enter your Stanford .edu email</h2>
-                <form id="forgotPassForm">
-                    <input type="email" id="forgotEmail" name="forgotEmail" required>
-                    <button type="submit">Send Password Reset Email</button>
-                </form>
-                <p id="forgotMessage"></p>
+
+                <div id="forgotForm" style="display: none;">
+                    <h3> Enter your Stanford .edu email.</h3>
+                    <form id="forgotPassForm">
+                        <input type="email" id="forgotEmail" name="forgotEmail" placeholder="Enter your email" required>
+                        <button type="submit">Send Password Reset Email</button>
+                    </form>
+                    <p id="forgotMessage"></p>
+                </div>
+
             </div>
            
             
@@ -64,6 +94,7 @@
                     $('#registerButton').show();
                     $('#loginForm').show();
                     $('#forgotButton').hide();
+                    $('#forgotForm').hide();
                 });
 
                 $('#registerButton').click(function() {

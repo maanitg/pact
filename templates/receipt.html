@@ -9,50 +9,73 @@
 
         {% from "receiptContainer.html" import receiptContainer with context %}
 
+        <nav class="top-nav">
+            <a href="/" class="nav-button">Home</a>
+            <a href="/about" class="nav-button">About</a>
+            <a href="/receipts" class="nav-button">Receipts</a>
+            <a href="/match" class="nav-button">Match</a>
+        </nav>
+        <div class="video-background">
+            <video muted loop autoplay="autoplay" id="myVideo">
+                <source src="static/real_homepage.mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
        <script>
             function showContent(id) {
-            // set all of the other ones to invisible
-            for (let i = 0; i < document.querySelectorAll(".receiptContainer").length; i++) {
-                document.querySelectorAll(".receiptContainer")[i].style.display = "none"
+                document.getElementById('titleElement').style.display = 'none';
+
+                // Hide all receipts
+                document.querySelectorAll(".receiptContainer").forEach(container => {
+                    container.style.display = "none";
+                });
+
+                // Show the selected receipt
+                document.getElementById(id).style.display = 'block';
+
+                // Ensure content wrapper is visible and properly positioned
+                const contentWrapper = document.querySelector('.content-wrapper');
+                contentWrapper.style.display = 'flex';
+                contentWrapper.style.position = 'fixed';
+                contentWrapper.style.top = '0';
+                contentWrapper.style.left = '0';
+                contentWrapper.style.right = '0';
+                contentWrapper.style.bottom = '0';
+
+                // Adjust button container position
+                const buttonContainer = document.querySelector('.button-container');
+                buttonContainer.style.alignSelf = 'center';
             }
-            document.getElementById(id).style.display = 'inline-block'
-            document.getElementById('downloadPicButton').style.display = 'inline-block'
-            activeReceipt = id
-        }
+
        </script>
 
-        <div>
+        <div class="verticalCenter">
             <center>
-                <h1>Pact</h1>
-                <h2>Marriage Pact for Spotify</h2>
-                <p> {{ title }} </p>
-            </center>
-        </div>
-
-        <div style="width: 100%; height: auto" class="receiptContainerWrapper">
-            <center>
-                {{ receiptContainer(user_display_name, short_term['items'], 'short_term_receipt', 'LAST MONTH') }}
-                {{ receiptContainer(user_display_name, medium_term['items'], 'medium_term_receipt', 'LAST 6 MONTHS') }}
-                {{ receiptContainer(user_display_name, long_term['items'], 'long_term_receipt', 'ALL TIME') }}
-            </center>
-        </div>
-
-        <div style="width: 100%; height: auto" class="buttons">
-            <center>
-                <div>
-                    <button onclick="showContent('short_term_receipt')" class="generatePicButton">Short Term Receipt</button>
-                    <button onclick="showContent('medium_term_receipt')" class="generatePicButton">Medium Term Receipt</button>
-                    <button onclick="showContent('long_term_receipt')" class="generatePicButton">Long Term Receipt</button>
+                <h5 id="titleElement"> {{ title }} </h5>
+            
+       
+            <div class="content-wrapper">
+                <div class="button-container2">
+                    <button onclick="showContent('short_term_receipt')" class="homepageButton">Short Term Receipt</button>
+                    <button onclick="showContent('medium_term_receipt')" class="homepageButton">Medium Term Receipt</button>
+                    <button onclick="showContent('long_term_receipt')" class="homepageButton">Long Term Receipt</button>
                 </div>
-            </center>
-        </div>
+        
+                <div class="receiptContainerWrapper">
+                    <center>
+                        {{ receiptContainer(user_display_name, short_term['items'], 'short_term_receipt', 'LAST MONTH') }}
+                        {{ receiptContainer(user_display_name, medium_term['items'], 'medium_term_receipt', 'LAST 6 MONTHS') }}
+                        {{ receiptContainer(user_display_name, long_term['items'], 'long_term_receipt', 'ALL TIME') }}
+                    </center>
+                </div>
+            </div>
 
-        <div style="width: 100%; height: auto" class="receiptContainerWrapper">
-            <center>
-                {{ receiptContainer(user_display_name, short_term['items'], 'short_term_receipt', 'LAST MONTH') }}
-                {{ receiptContainer(user_display_name, medium_term['items'], 'medium_term_receipt', 'LAST 6 MONTHS') }}
-                {{ receiptContainer(user_display_name, long_term['items'], 'long_term_receipt', 'ALL TIME') }}
             </center>
+        
+          
+            
+
+
         </div>
     
     </body>

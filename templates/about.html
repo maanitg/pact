@@ -1,0 +1,56 @@
+<html lang="en">
+
+
+    <head>
+        <meta charset=""UTF-8">
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+        <title>{{ title }}</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    </head>
+
+
+    <body>
+
+        <nav class="top-nav">
+            <a href="/" class="nav-button">Home</a>
+            <a href="/about" class="nav-button">About</a>
+            <a href="/receipts" class="nav-button">Receipts</a>
+            <a href="/match" class="nav-button">Match</a>
+        </nav>
+
+        <div class="video-background">
+            <video muted loop autoplay="autoplay" id="myVideo">
+                <source src="static/real_homepage.mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+        <h2>About Wavelength</h2>
+        <div class="white-overlay">
+            <div class="aboutContainer">
+                
+                <h6>Wavelength is  inspired by Marriage Pact, a project spun into a company by two Stanford students and now at colleges across the country.
+                    Once a year, Marriage Pact asks students to fill out a questionnaire on their personalities and preferences, and finds the optimal pairings
+                    of students on a given campus.<br>
+
+                    But why not try pairing students on something more targeted - music taste!<br>
+
+                    Wavelength is a student project for exactly this. Login with your Stanford email, connect your Spotify account,
+                    and be  matched with another student on campus based on music taste compatibility.<br> 
+                    
+                    Can we create optimal pairings based on music taste alone? We'll find out.<br>
+
+                    All you have to do, is <a href="/">create an account</a> with your stanford.edu email, fill out a one-time form, login with Spotify, and... wait. 
+                    We'll send you an email when matches have been made. From there, what you do with your optimal music match is up to you. <br>
+                    
+                    Who knows, maybe you'll find each other to be on the same wavelength. <br>
+
+                    (While you're waiting, check out our receiptify-inspired <a href="/receipts">listening receipts</a> generated from your top tracks!)
+                </h6>
+            </div>
+        </div>
+
+
+ 
+    </body>
+</html>

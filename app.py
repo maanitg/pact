@@ -181,7 +181,7 @@ def form():
     if not coll.find_one({'_email': globals()["USER"], '_stored': 1}):
         return render_template('form.html')
     else:
-        return redirect(url_for("storeData", _external=True))
+        return redirect(url_for("receipts", _external=True))
 
 
 @app.route('/webhook', methods=['GET', 'POST'])
@@ -227,7 +227,7 @@ def loginSpotify():
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
     else:
-        return redirect(url_for("storeData", _external=True))
+        return redirect(url_for("receipts", _external=True))
 
 
 @app.route("/redirectPage")
@@ -237,14 +237,14 @@ def redirectPage():
     code = request.args.get('code') # returns token
     token_info = sp_oauth.get_access_token(code)
     session[TOKEN_INFO] = token_info
-    return redirect(url_for("storeData", _external=True))
+    return redirect(url_for("receipts", _external=True))
     
 def get_token():
     token_info = session.get(TOKEN_INFO, None)
     return token_info
 
-@app.route("/storeData")
-def storeData():
+@app.route("/receipts")
+def receipts():
     current_user_name = globals()["USER"]
     if not globals()["STORED"]:
         user_token = get_token()
@@ -311,7 +311,13 @@ def storeData():
     short_term = coll.find_one({"_email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
     medium_term = coll.find_one({"_email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
     long_term = coll.find_one({"_email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
-    return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify - now sit back and relax!", currentTime=gmtime())
+    return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
+
+@app.route("/about")
+def about():
+    return render_template('about.html')
+
+
 
 @app.template_filter('strftime')
 def _jinja2_filter_datetime(date, fmt="%a, %d %b %Y"):
