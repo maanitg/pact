@@ -215,24 +215,32 @@ h5 {
     left: 0;
     width: 100%;
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between; /* Changed from space-around */
     align-items: center;
     background-color: rgba(0, 0, 0, 0.7);
-    padding: 5px 0;
+    padding: 5px 10px; /* Added horizontal padding */
     z-index: 1000;
-  }
+    box-sizing: border-box; /* Ensure padding is included in width */
+    }
 
-  .nav-button {
-      color: white;
-      text-decoration: none;
-      font-size: 12px;
-      padding: 5px;
-      transition: all 0.3s ease;
-  }
+    .nav-button {
+        color: white;
+        text-decoration: none;
+        font-size: 12px;
+        padding: 5px 8px; /* Increased horizontal padding */
+        transition: all 0.3s ease;
+        white-space: nowrap; /* Prevent text wrapping */
+    }
 
-  body {
-      padding-top: 40px; /* Adjust based on your mobile nav bar height */
-  }
+    body {
+        padding-top: 50px; /* Increased to ensure content is below nav bar */
+    }
+
+    /* Adjust other elements if needed */
+    .page-title, .white-overlay, .content {
+        position: relative;
+        z-index: 1; /* Ensure these are above the nav bar */
+    }
 
 
   .verticalCenter {
