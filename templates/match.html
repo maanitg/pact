@@ -2,21 +2,22 @@
 
 
     <head>
-        <meta charset=""UTF-8">
+        <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     </head>
 
 
+    <nav class="top-nav">
+        <a href="/" class="nav-button">Home</a>
+        <a href="/about" class="nav-button">About</a>
+        <a href="/receipts" class="nav-button">Receipts</a>
+        <a href="/match" class="nav-button">Match</a>
+    </nav>
     <body>
 
-        <nav class="top-nav">
-            <a href="/" class="nav-button">Home</a>
-            <a href="/about" class="nav-button">About</a>
-            <a href="/receipts" class="nav-button">Receipts</a>
-            <a href="/match" class="nav-button">Match</a>
-        </nav>
+        
 
         <div class="video-background">
             <video muted loop autoplay="autoplay" id="myVideo">
