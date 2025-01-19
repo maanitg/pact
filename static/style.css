@@ -206,101 +206,7 @@ h5 {
   margin-bottom: 1vh;
 }
 
-/* Mobile-specific styles */
-@media screen and (max-width: 768px) {
 
-  .aboutContainer {
-    width: 100%;
-  }
-  
-  .top-nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 80%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: rgba(0, 0, 0, 0.7);
-    padding: 5px 50px; /* Increased horizontal padding */
-    z-index: 1000;
-    box-sizing: border-box;
-   } 
-
-    .nav-button {
-        color: white;
-        text-decoration: none;
-        font-size: 12px;
-        transition: all 0.3s ease;
-        white-space: nowrap; /* Prevent text wrapping */
-        padding: 5px 3px;
-    }
-
-    body {
-        padding-top: 120px; /* Increased to ensure content is below nav bar */
-    }
-
-    /* Adjust other elements if needed */
-    .page-title, .white-overlay, .content {
-        position: relative;
-        z-index: 1; /* Ensure these are above the nav bar */
-    }
-
-
-  .verticalCenter {
-    width: 90%;
-    margin: 0 auto;
-  }
-
-  h1 {
-    font-size: 3em;
-    width: 100%;
-  }
-
-  h2 {
-    font-size: 2.3em;
-    width: 100%;
-  }
-
-  h3 {
-    font-size: 2.2em;
-    width: 100%;
-  }
-
-  h5 {
-    font-size: 1.8em;
-    width: 100%;
-  }
-
-  h6 {
-    font-size: 1em;
-    width: 100%;
-  }
-
-  .button-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .homepageButton {
-    width: 100%;
-    margin-bottom: 3px;
-  }
-
-  #loginForm, #registerForm, #forgotForm {
-    width: 100%;
-  }
-
-  input[type="email"], input[type="password"] {
-    width: 100%;
-    margin-bottom: 10px;
-  }
-
-  button[type="submit"] {
-    width: 100%;
-  }
-}
 
 
 h2 {
@@ -608,4 +514,98 @@ label {
 .nav-button:hover {
   transform: scale(1.1);
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* Mobile-specific styles */
+@media screen and (max-width: 768px) {
+
+  .aboutContainer {
+    width: 100%;
+  }
+
+  .top-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    box-sizing: border-box;
+   } 
+
+    .nav-button {
+        color: white;
+        text-decoration: none;
+        font-size: 1.4em;
+        transition: all 0.3s ease;
+        white-space: nowrap; /* Prevent text wrapping */
+        padding: 5px 3px;
+    }
+
+    body {
+        padding-top: 120px; /* Increased to ensure content is below nav bar */
+    }
+
+    /* Adjust other elements if needed */
+    .page-title, .white-overlay, .content {
+        position: relative;
+        z-index: 1; /* Ensure these are above the nav bar */
+    }
+
+
+  .verticalCenter {
+    width: 90%;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 3em;
+    width: 100%;
+  }
+
+  h2 {
+    font-size: 2.3em;
+    width: 100%;
+  }
+
+  h3 {
+    font-size: 2.2em;
+    width: 100%;
+  }
+
+  h5 {
+    font-size: 1.8em;
+    width: 100%;
+  }
+
+  h6 {
+    font-size: 1em;
+    width: 100%;
+  }
+
+  .button-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .homepageButton {
+    width: 100%;
+    margin-bottom: 3px;
+  }
+
+  #loginForm, #registerForm, #forgotForm {
+    width: 100%;
+  }
+
+  input[type="email"], input[type="password"] {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  button[type="submit"] {
+    width: 100%;
+  }
 }
