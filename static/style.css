@@ -121,7 +121,6 @@
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow: hidden;
   }
  
 
@@ -458,7 +457,6 @@ input:focus, select:focus, textarea:focus {
     0 6px 6px rgba(0, 0, 0, 1);
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
 }
 
 .aboutContainer::before {
