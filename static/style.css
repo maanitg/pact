@@ -209,6 +209,10 @@ h5 {
 /* Mobile-specific styles */
 @media screen and (max-width: 768px) {
 
+  .aboutContainer {
+    width: 100%;
+  }
+  
   .top-nav {
     position: fixed;
     top: 0;
@@ -229,6 +233,7 @@ h5 {
         font-size: 12px;
         transition: all 0.3s ease;
         white-space: nowrap; /* Prevent text wrapping */
+        padding: 5px 3px;
     }
 
     body {
@@ -252,8 +257,23 @@ h5 {
     width: 100%;
   }
 
+  h2 {
+    font-size: 2.3em;
+    width: 100%;
+  }
+
+  h3 {
+    font-size: 2.2em;
+    width: 100%;
+  }
+
   h5 {
     font-size: 1.8em;
+    width: 100%;
+  }
+
+  h6 {
+    font-size: 1em;
     width: 100%;
   }
 
