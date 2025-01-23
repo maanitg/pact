@@ -7,7 +7,6 @@ import os
 import time 
 import json
 from datetime import datetime
-from pyngrok import ngrok
 from time import gmtime, strftime
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
