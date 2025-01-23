@@ -187,35 +187,32 @@ def form():
         return redirect(url_for("receipts", _external=True))
 
 
-@app.route('/webhook', methods=['GET', 'POST'])
-def jotform_webhook():
+@app.route('/submit-form', methods=['POST'])
+def submit_form():
 
-    if request.method == 'GET':
-        return "Webhook URL is valid", 200
-    elif request.method == 'POST':
-        raw_data = request.form.get('rawRequest')
-        data = json.loads(raw_data)
-        print(data)
-
+    try:
+        # Get JSON data from request
+        data = request.get_json()  # Since we're sending JSON from the frontend
+        
         # Process and upload data to MongoDB
         coll.update_one(
-        { "_email": globals()["USER"] },
-        { "$set": { 
-            "_firstname": data["q1_name"]['first'], 
-            "_lastname": data["q1_name"]['last'],
-            "_year": data["q2_year"], 
-            "_gender": data["q3_gender"], 
-            "_friendpartner": data["q4_areYou"], 
-            "_partner": data["q5_partner"], 
-            "_redflag": data["q11_redflag"] 
-        }},
-        upsert=True
+            {"_email": globals()["USER"]},
+            {"$set": {
+                "_firstname": data["firstName"],
+                "_lastname": data["lastName"],
+                "_year": data["year"],
+                "_gender": data["gender"],
+                "_friendpartner": data["lookingFor"],  # This will be an array like ["Friend", "Partner"]
+                "_partner": data["attractedTo"],       # This will be an array like ["Male", "Female"]
+                "_redflag": data["spotifyRedFlag"],
+            }},
+            upsert=True
         )
 
         return jsonify({"redirectUrl": url_for('loginSpotify')})
-
-
-
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
    
 

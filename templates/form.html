@@ -3,6 +3,7 @@
         <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <title>{{ title }}</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     </head>
     <body>
         <nav class="top-nav">
@@ -18,16 +19,187 @@
                 Your browser does not support the video tag.
             </video>
         </div>
-        
+
         <center>
             <h1>WAVELENGTH</h1>
             
-            <script type="text/javascript" src="https://form.jotform.com/jsform/243650981920056">
+            <div class="form-container">
+                <form id="musicForm" style="max-width: 600px; background-color: rgb(0 0 0 / 0.5); margin: 20px auto; padding: 20px; border-radius: 8px;">
+                    <div class="form-section">
+                        <h3>Name<span style="color: red">*</span></h3>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="firstName" placeholder="First Name" required style="flex: 1;">
+                            <input type="text" id="lastName" placeholder="Last Name" required style="flex: 1;">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Year<span style="color: red">*</span></h3>
+                        <select id="year" required>
+                            <option value="">Please Select</option>
+                            <option value="Freshman">Freshman (1st year)</option>
+                            <option value="Sophomore">Sophomore (2nd year)</option>
+                            <option value="Junior">Junior (3rd year)</option>
+                            <option value="Senior">Senior/Co-Term (4th year)</option>
+                            <option value="5th+">5th+ year undergraduate</option>
+                            <option value="5th+ Grad">5th+ year co-term/masters</option>
+                        </select>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Gender<span style="color: red">*</span></h3>
+                        <select id="gender" required>
+                            <option value="">Please Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Non-Binary">Non-Binary</option>
+                        </select>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Are you looking for a friend and/or partner?<span style="color: red">*</span></h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="lookingFor" id="lookingFriend">
+                                <span>Friend</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="lookingFor" id="lookingPartner">
+                                <span>Partner</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>If you selected 'partner', who are you attracted to?</h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="attractedTo" id="attractedMale">
+                                <span>Male</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="attractedTo" id="attractedFemale">
+                                <span>Female</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="attractedTo" id="attractedNonBinary">
+                                <span>Non-Binary</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Biggest red flag in a Spotify Wrapped?<span style="color: red">*</span></h3>
+                        <select id="spotifyRedFlag" required>
+                            <option value="">Please Select</option>
+                            <option value="Lana Del Rey">Lana Del Rey</option>
+                            <option value="Taylor Swift">Taylor Swift</option>
+                            <option value="Kanye West">Kanye West</option>
+                            <option value="Drake">Drake</option>
+                            <option value="The Chainsmokers">The Chainsmokers</option>
+                        </select>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>My Spotify Wrapped is an accurate reflection of who I am as a person.<span style="color: red">*</span></h3>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="spotifyReflection" value="No way." required> <span>No way.</span>
+                                <input type="radio" name="spotifyReflection" value="I suppose"> <span>I suppose</span>
+                                <input type="radio" name="spotifyReflection" value="Mostly"> <span>Mostly</span>
+                                <input type="radio" name="spotifyReflection" value="HELL YEAHHHH!"><span>HELL YEAHHHH!</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>I am always open to new, unfamiliar types of music.<span style="color: red">*</span></h3>
+                        <div class="radio-group">
+                            <label class="radio-group">
+                                <input type="radio" name="musicOpenness" value="ABSOLUTELY NOT" required> <span>ABSOLUTELY NOT.</span>
+                                <input type="radio" name="musicOpenness" value="I'll try a couple songs."> <span>I'll try a couple songs.</span>
+                                <input type="radio" name="musicOpenness" value="My soul contains multitudes, and my playlists reflect it."> <span>My soul contains multitudes, and my playlists reflect it.</span>
+                                <input type="radio" name="musicOpenness" value="HELL YEHAHH MONGOLIAN THROAT SINGING AND NORWEGIAN ELECTRO POP"> <span>HELL YEAHH MONGOLIAN THROAT SINGING AND NORWEGIAN ELECTRO POP</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" style="background-color: #0070f3; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Submit</button>
+                </form>
+            </div>
+
+
+            <script>
+                $(document).ready(function() {
+
+                    function validateCheckboxGroup(groupName) {
+                        const checkboxes = document.querySelectorAll(`input[name="${groupName}"]`);
+                        let checked = false;
+                        checkboxes.forEach(checkbox => {
+                            if (checkbox.checked) checked = true;
+                        });
+                        return checked;
+                    }
+                    $('#musicForm').on('submit', function(e) {
+                        e.preventDefault();
+                        
+                        // Validate friend/partner group
+                        if (!validateCheckboxGroup('lookingFor')) {
+                            alert('Please select at least one option for what you are looking for (friend and/or partner)');
+                            return false;
+                        }
+                        
+                        // Validate attracted-to group if partner is selected
+                        if ($('#lookingPartner').is(':checked')) {
+                            if (!validateCheckboxGroup('attractedTo')) {
+                                alert('Since you selected partner, please select at least one option for who you are attracted to');
+                                return false;
+                            }
+                        }
+                        // Get artist rankings
+                        const artistInputs = $('#artistRankings input[type="number"]');
+                        const artists = ['theBeatles', 'taylorSwift', 'kanyeWest', 'queen', 'chopin', 'metallica', 'billieEilish'];
+                        const artistRankings = {};
+                        artistInputs.each((index, input) => {
+                            artistRankings[artists[index]] = $(input).val();
+                        });
+
+                        const formData = {
+                            firstName: $('#firstName').val(),
+                            lastName: $('#lastName').val(),
+                            year: $('#year').val(),
+                            gender: $('#gender').val(),
+                            lookingFor: [],
+                            attractedTo: [],
+                            artistRankings: artistRankings,
+                            spotifyRedFlag: $('#spotifyRedFlag').val(),
+                            spotifyReflection: $('input[name="spotifyReflection"]:checked').val(),
+                            musicOpenness: $('input[name="musicOpenness"]:checked').val()
+                        };
+                        
+                        if ($('#lookingFriend').is(':checked')) formData.lookingFor.push("Friend");
+                        if ($('#lookingPartner').is(':checked')) formData.lookingFor.push("Partner");
+                        if ($('#attractedMale').is(':checked')) formData.attractedTo.push("Male");
+                        if ($('#attractedFemale').is(':checked')) formData.attractedTo.push("Female");
+                        if ($('#attractedNonBinary').is(':checked')) formData.attractedTo.push("Non-Binary");
+
+
+                        $.ajax({
+                            url: '/submit-form',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(formData),
+                            success: function(response) {
+                                window.location.href = response.redirectUrl;
+                            },
+                            error: function(xhr, status, error) {
+                                alert('Error submitting form. Please try again.');
+                                console.error(error);
+                            }
+                        });
+                    });
+                });
             </script>
-
-         
-                
-
         </center>
     </body>
 </html>

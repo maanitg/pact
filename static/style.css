@@ -59,6 +59,11 @@
       padding-right: 5%; /* Add some padding on the left */
   }
 
+  .form-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
   .button-container2 {
     display: flex;
@@ -70,19 +75,40 @@
     margin-bottom: 50px;
   }
 
-  @media (max-width: 768px) {
-    .content-wrapper {
-        flex-direction: column;
-        align-items: center;
-        padding-left: 0;
-    }
-    
-    .button-container2 {
-        margin-right: 0;
-        margin-bottom: 20px;
-    }
-}
+  .checkbox-group,
+  .radio-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin: 15px 0;
+  }
 
+  /* Individual checkbox/radio label containers */
+  .checkbox-label,
+  .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      cursor: pointer;
+  }
+
+  /* Style for the actual input elements */
+  input[type="checkbox"],
+  input[type="radio"] {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      cursor: pointer;
+  }
+
+  /* Style for the labels */
+  .checkbox-label span,
+  .radio-label span {
+      font-size: 16px;
+      line-height: 20px;
+  }
   
   .homepageButton::before {
     content: '';
@@ -493,7 +519,7 @@ label {
   display: flex;
   justify-content: center;
   padding: 20px 0;
-  background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent background */
+  background-color: rgba(0, 0, 0, 1.0); /* Semi-transparent background */
   z-index: 1000; /* Ensure it's above other content */
   margin-bottom: 10vh;
 }
@@ -521,6 +547,17 @@ label {
     width: 100%;
   }
 
+  .content-wrapper {
+    flex-direction: column;
+    align-items: center;
+    padding-left: 0;
+  }
+
+  .button-container2 {
+      margin-right: 0;
+      margin-bottom: 20px;
+  }
+
   .top-nav {
     position: fixed;
     top: 0;
@@ -528,7 +565,7 @@ label {
     width: 100%;
     justify-content: space-between;
     align-items: center;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 1.0);
     z-index: 1000;
     box-sizing: border-box;
    } 
