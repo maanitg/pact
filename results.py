@@ -25,7 +25,7 @@ coll = db.users
 
 def send_results():
     users = list(coll.find({}, {
-        '_email': 1,
+        'email': 1,
         '_year': 1,
         '_match': 1
     }))

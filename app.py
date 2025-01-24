@@ -41,7 +41,6 @@ except Exception as e:
 
 db = client.tangle
 coll = db.users
-coll.delete_many({"_email": None})
 
 CLIENT_ID = "ff513e5fd4dd4e7483ee15b1f58215aa"
 CLIENT_SECRET = "0b159e97f65d4ecc86ffcc6ceb82afd7"
@@ -75,7 +74,7 @@ if __name__ == "__main__":
 
 def get_password_by_email(email):
     # Find the document with the given email
-    document = coll.find_one({"_email": email})
+    document = coll.find_one({"email": email})
     
     if document:
         # If the document exists, return the password
@@ -102,7 +101,7 @@ def register():
     if not email.endswith('@stanford.edu'):
         return jsonify({'success': False, 'message': 'Please enter a Stanford email address.'})
     token = serializer.dumps(email, salt='email-confirm')
-    if not coll.find_one({'_email': email}):
+    if not coll.find_one({'email': email}):
         confirm_url = url_for('confirm_email', token=token, _external=True)
         msg = Message('Confirm Your Email', sender='your_email@gmail.com', recipients=[email])
         msg.body = f'Click the following link to confirm your email: {confirm_url}'
@@ -117,7 +116,7 @@ def forgot_password():
     email = request.form.get('forgotEmail')
     if not email.endswith('@stanford.edu'):
         return jsonify({'success': False, 'message': 'Please enter your Stanford email address.'})
-    if not coll.find_one({'_email': email}):
+    if not coll.find_one({'email': email}):
         return jsonify({'success': False, 'message': 'Email not found. Register for new account.'})
     else:
         token = serializer.dumps(email, salt='email-confirm')
@@ -135,41 +134,33 @@ def confirm_email(token):
     except:
         return 'The confirmation link is invalid or has expired.'
     
-    try:
-        if not (email is None):
-            coll.update_one(
-                {"_email": email},
-                {"$set": {"confirmed": True, "confirmed_on": datetime.now()}},
-                upsert=True
-            )
-        else:
-            print("Email is None")
-    except DuplicateKeyError:
-        # The document was inserted by a concurrent request
-        coll.update_one(
-            {"_email": email},
-            {"$set": {"confirmed": True, "confirmed_on": datetime.now()}}
-        )
-        print(f"User confirmed after conflict: {email}")
+
+    coll.update_one(
+        {"email": email},
+        {"$set": {"confirmed": True, "confirmed_on": datetime.now()}},
+        upsert=True
+    )
+    print(f"User confirmed with no issue: {email}")
+
     
     return render_template('set_password.html', email=email)
 
 
 @app.route('/set_password/', methods=['POST'])
 def set_password():
-    coll.delete_many({"_email": None})
+
     email = request.form.get('setEmail') 
-    print(email)
-    
     password = request.form.get('password')
-    if not email or email.strip() == "":
+    if coll.find_one({'email': email}):
+        coll.update_one({ "email": email },
+        { "$set": { "_password": password }  }
+        )
+        return jsonify({'success': True, 'message': 'Password set!'})
+    else:
         return jsonify({'success': False, 'message': 'Invalid email address.'})
-    coll.update_one({ "_email": email },
-        { "$set": { "_password": password }  },
-        upsert=True
-    )
     
-    return jsonify({'success': True, 'message': 'Password set!'})
+    
+    
 
     
 @app.route('/login', methods=['POST'])
@@ -180,7 +171,7 @@ def login():
 
     if not email.endswith('@stanford.edu'):
         return jsonify({'success': False, 'message': 'Please enter a Stanford email address.'})
-    if not coll.find_one({'_email': email}):
+    if not coll.find_one({'email': email}):
         return jsonify({'success': False, 'message': 'Account does not exist. Please register.'})
     password = request.form.get('password')
     p = get_password_by_email(email)
@@ -189,7 +180,7 @@ def login():
     
         globals()["USER"] = email
         
-        if coll.find_one({'_email': globals()["USER"], '_stored': 1}):
+        if coll.find_one({'email': globals()["USER"], '_stored': 1}):
             globals()["STORED"] = True
            
         return jsonify({'success': True, 'message': 'Logged in!'})    
@@ -199,7 +190,7 @@ def login():
 
 @app.route("/form")
 def form():
-    if not coll.find_one({'_email': globals()["USER"], '_stored': 1}):
+    if not coll.find_one({'email': globals()["USER"], '_stored': 1}):
         return render_template('form.html')
     else:
         return redirect(url_for("receipts", _external=True))
@@ -215,7 +206,7 @@ def submit_form():
         
         # Process and upload data to MongoDB
         coll.update_one(
-            {"_email": globals()["USER"]},
+            {"email": globals()["USER"]},
             {"$set": {
                 "_firstname": data["firstName"],
                 "_lastname": data["lastName"],
@@ -241,7 +232,7 @@ def submit_form():
 @app.route("/loginSpotify")
 def loginSpotify():
 
-    if not coll.find_one({'_email': globals()["USER"], '_stored': 1}):
+    if not coll.find_one({'email': globals()["USER"], '_stored': 1}):
         print("Accessing spotify...")
         sp_oauth = create_spotify_oauth()
         auth_url = sp_oauth.get_authorize_url()
@@ -259,7 +250,7 @@ def redirectPage():
     session[TOKEN_INFO] = token_info
 
     coll.update_one(
-            {"_email": globals()["USER"]},
+            {"email": globals()["USER"]},
             {"$set": {
                 "_connected": 1
             }},
@@ -284,9 +275,9 @@ def clear_spotify_session():
 
 @app.route("/receipts")
 def receipts():
-    if ((globals()["USER"] is None) or (coll.find_one({'_email': globals()["USER"], '_connected': 1}) is None)):
+    if ((globals()["USER"] is None) or (coll.find_one({'email': globals()["USER"], '_connected': 1}) is None)):
         print(globals()["USER"])
-        print(coll.find_one({'_email': globals()["USER"], '_connected': 1}))
+        print(coll.find_one({'email': globals()["USER"], '_connected': 1}))
         return render_template('receiptNoUser.html');
     else:
         
@@ -349,13 +340,13 @@ def receipts():
                 long_gen.extend(artist['genres'])
             long_gen = sorted(list(set(long_gen)))
             
-            coll.update_one({ "_email": globals()["USER"] },
+            coll.update_one({ "email": globals()["USER"] },
                 { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
             )
 
-        short_term = coll.find_one({"_email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
-        medium_term = coll.find_one({"_email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
-        long_term = coll.find_one({"_email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
+        short_term = coll.find_one({"email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
+        medium_term = coll.find_one({"email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
+        long_term = coll.find_one({"email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
 
         return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
 

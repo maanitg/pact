@@ -25,7 +25,7 @@ coll = db.users
 
 def create_user_vectors():
     users_data = list(coll.find({}, {
-        '_email': 1,
+        'email': 1,
         '_year': 1,
         '_long_alb': 1,
         '_long_art': 1,
@@ -125,7 +125,7 @@ def create_user_vectors():
 
 
 def get_compatible_users(user_id, k=10):
-    user = coll.find_one({'_email': user_id})
+    user = coll.find_one({'email': user_id})
     user_vector = np.array(user['_vector'])
     looking_for = user['_friendpartner']
     gender = user['_gender']
@@ -143,11 +143,11 @@ def get_compatible_users(user_id, k=10):
 
     compatible_users = coll.aggregate([
         {'$match': {
-            '_email': {'$ne': user_id},
+            'email': {'$ne': user_id},
             '$or': match_conditions
         }},
         {'$project': {
-            '_email': 1,
+            'email': 1,
             '_vector': 1,
             '_similarity': {
                 '$let': {
@@ -160,7 +160,7 @@ def get_compatible_users(user_id, k=10):
         {'$limit': k}
     ])
     
-    return [user['_email'] for user in compatible_users]
+    return [user['email'] for user in compatible_users]
 
 def gale_shapley(user_ids, k=10):
     free_users = set(user_ids)
@@ -194,18 +194,18 @@ def gale_shapley(user_ids, k=10):
     return engaged
 
 # Fetch all user IDs from the collection
-all_users = list(coll.find({}, {'_email': 1}))
-user_ids = [user['_email'] for user in all_users]
+all_users = list(coll.find({}, {'email': 1}))
+user_ids = [user['email'] for user in all_users]
 
 # Run the algorithm
 matches = gale_shapley(user_ids)
 
 # Store results in mongodb, and print
 for user1, user2 in matches.items():
-    coll.update_one({ "_email": user1 },
+    coll.update_one({ "email": user1 },
         { "$set": { "_match": user2 }  }
     )
-    coll.update_one({ "_email": user2 },
+    coll.update_one({ "email": user2 },
         { "$set": { "_match": user1 }  }
     )
     print(f"Matched: {user1} with {user2}")
