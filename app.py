@@ -155,6 +155,7 @@ def set_password():
         coll.update_one({ "email": email },
         { "$set": { "_password": password }  }
         )
+        globals()["USER"] = email
         return jsonify({'success': True, 'message': 'Password set!'})
     else:
         return jsonify({'success': False, 'message': 'Invalid email address.'})
@@ -252,7 +253,10 @@ def redirectPage():
     coll.update_one(
             {"email": globals()["USER"]},
             {"$set": {
-                "_connected": 1
+                "_connected": 1,
+                "spotify_access_token": token_info['access_token'],
+                "spotify_refresh_token": token_info['refresh_token'],
+                "token_expiry": token_info['expires_at']
             }},
             upsert=True
         )
@@ -272,12 +276,14 @@ def get_token():
 @app.route("/receipts")
 def receipts():
     if ((globals()["USER"] is None) or (coll.find_one({'email': globals()["USER"], '_connected': 1}) is None)):
-        print(globals()["USER"])
-        print(coll.find_one({'email': globals()["USER"], '_connected': 1}))
         return render_template('receiptNoUser.html');
     else:
-        
-        current_user_name = globals()["USER"]
+        user_data = coll.find_one({"email": globals()["USER"]})
+        if not user_data or 'spotify_access_token' not in user_data:
+            return redirect(url_for("loginSpotify"))
+        sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
+
+        #current_user_name = globals()["USER"]
         if not globals()["STORED"]:
             user_token = get_token()
              
