@@ -87,7 +87,7 @@ def create_spotify_oauth():
     return SpotifyOAuth(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
-        redirect_uri=url_for("redirectPage",_external=True, _scheme='http'),
+        redirect_uri=url_for("redirectPage",_external=True, _scheme='https'),
         scope="user-top-read user-library-read"
     )
 
@@ -268,10 +268,6 @@ def get_token():
             token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
             session[TOKEN_INFO] = token_info
     return token_info
-
-def clear_spotify_session():
-    if TOKEN_INFO in session:
-        del session[TOKEN_INFO]
 
 @app.route("/receipts")
 def receipts():
