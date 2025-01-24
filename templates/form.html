@@ -244,11 +244,16 @@
                             contentType: 'application/json',
                             data: JSON.stringify(formData),
                             success: function(response) {
+                                console.log('Response received:', response);
                                 window.location.href = response.redirectUrl;
                             },
                             error: function(xhr, status, error) {
+                                console.log('Error details:', {
+                                    status: xhr.status,
+                                    responseText: xhr.responseText,
+                                    error: error
+                                });
                                 alert('Error submitting form. Please try again.');
-                                console.error(error);
                             }
                         });
                     });

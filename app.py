@@ -50,7 +50,7 @@ app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = 'fotoxre@gmail.com'
 app.config['MAIL_PASSWORD'] = 'ovuagvufsbfqwdng'
 app.secret_key = SECRET_KEY
-# app.config['SERVER_NAME'] = 'legendary-train-4r6j4qv7p76c7w6g-5000.app.github.dev'
+#cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
 USER = None
 STORED = False
@@ -195,7 +195,7 @@ def form():
 
 
 @app.route('/submit-form', methods=['POST'])
-@cache.cached(timeout=50)
+#@cache.cached(timeout=50)
 def submit_form():
 
     try:
