@@ -1,4 +1,4 @@
-from flask import Flask, request, url_for, session, redirect, render_template, jsonify
+from flask import Flask, request, url_for, session, redirect, render_template, jsonify, g
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from flask_mail import Mail, Message
@@ -6,7 +6,8 @@ from itsdangerous import URLSafeTimedSerializer
 import os
 import time 
 import json
-from datetime import datetime
+from flask_caching import Cache
+from datetime import datetime, timedelta
 from time import gmtime, strftime
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
@@ -18,7 +19,8 @@ from pymongo.server_api import ServerApi
 # database set up
 uri = "mongodb+srv://maanit:We'reall50%25banana@tangle.h9qzr.mongodb.net/?retryWrites=true&w=majority&appName=tangle"
 # Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'))
+client = MongoClient(uri, server_api=ServerApi('1'), maxPoolSize=50, wtimeoutms=2500, connectTimeoutMS=2000, serverSelectionTimeoutMS=3000)
+
 # Send a ping to confirm a successful connection
 try:
     client.admin.command('ping')
@@ -59,6 +61,11 @@ serializer = (URLSafeTimedSerializer(app.config['SECRET_KEY']))
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
+cache = Cache(config={
+    'CACHE_TYPE': 'SimpleCache',
+    'CACHE_DEFAULT_TIMEOUT': 300
+})
 
 def get_password_by_email(email):
     # Find the document with the given email
@@ -188,6 +195,7 @@ def form():
 
 
 @app.route('/submit-form', methods=['POST'])
+@cache.cached(timeout=50)
 def submit_form():
 
     try:
@@ -352,3 +360,16 @@ def _jinja2_filter_miliseconds(time, fmt=None):
     if seconds < 10: 
         return str(minutes) + ":0" + str(seconds)
     return str(minutes) + ":" + str(seconds ) 
+
+@app.teardown_appcontext
+def close_db_connection(error):
+    if hasattr(g, 'mongo_client'):
+        g.mongo_client.close()
+
+
+@app.before_request
+def cleanup_session():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(minutes=60)
+
+

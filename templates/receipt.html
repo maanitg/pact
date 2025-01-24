@@ -18,10 +18,68 @@
         </nav>
         <div class="video-background">
             <video muted loop autoplay="autoplay" id="myVideo">
-                <source src="static/real_homepage.mp4">
-                Your browser does not support the video tag.
+                <source src="static/real_homepage.hevc.mp4" type="video/mp4; codecs=hvc1">
+                <source src="static/real_homepage.mp4" type="video/mp4; codecs=avc1">
             </video>
         </div>
+
+
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const videoBackground = document.querySelector('.video-background');
+                const video = document.getElementById('myVideo');
+                let frameCount = 0;
+                let lastTime = performance.now();
+                let freezeCount = 0;
+                
+                // Initially start with video
+                video.setAttribute('autoplay', '');
+                
+                // Function to switch to static background
+                function switchToStatic() {
+                    video.style.display = 'none';
+                    video.pause();
+                    videoBackground.style.backgroundImage = "url('static/homepage.jpg')";
+                    videoBackground.style.backgroundSize = 'cover';
+                }
+                
+                // Function to monitor frame rate and page responsiveness
+                function checkPerformance() {
+                    const currentTime = performance.now();
+                    const timeDiff = currentTime - lastTime;
+                    
+                    // Check if frame time is too high (indicating lag)
+                    if (timeDiff > 100) { // More than 100ms between frames
+                        freezeCount++;
+                        if (freezeCount > 3) { // If we detect multiple freezes
+                            switchToStatic();
+                            return; // Stop monitoring once switched to static
+                        }
+                    } else {
+                        freezeCount = Math.max(0, freezeCount - 1); // Reduce freeze count if performance improves
+                    }
+                    
+                    lastTime = currentTime;
+                    frameCount++;
+                    
+                    requestAnimationFrame(checkPerformance);
+                }
+                
+                // Start performance monitoring
+                requestAnimationFrame(checkPerformance);
+                
+                // Also monitor for memory usage if available
+                if (window.performance && performance.memory) {
+                    setInterval(() => {
+                        if (performance.memory.usedJSHeapSize > performance.memory.jsHeapSizeLimit * 0.8) {
+                            switchToStatic();
+                        }
+                    }, 1000);
+                }
+            });
+        </script>
+        
        <script>
             function showContent(id) {
                 document.getElementById('titleElement').style.display = 'none';

@@ -543,6 +543,15 @@ label {
 /* Mobile-specific styles */
 @media screen and (max-width: 768px) {
 
+
+  .video-background {
+      background-image: url('homepage.png');
+      background-size: cover;
+  }
+  .video-background video {
+      display: none;
+  }
+    
   .aboutContainer {
     width: 100%;
   }
