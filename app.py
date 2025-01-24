@@ -19,7 +19,17 @@ from pymongo.server_api import ServerApi
 # database set up
 uri = "mongodb+srv://maanit:We'reall50%25banana@tangle.h9qzr.mongodb.net/?retryWrites=true&w=majority&appName=tangle"
 # Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'), maxPoolSize=50, wtimeoutms=2500, connectTimeoutMS=2000, serverSelectionTimeoutMS=3000)
+#client = MongoClient(uri, server_api=ServerApi('1'), maxPoolSize=50, wtimeoutms=2500, connectTimeoutMS=2000, serverSelectionTimeoutMS=3000)
+
+client = MongoClient(
+    "mongodb+srv://maanit:We'reall50%25banana@tangle.h9qzr.mongodb.net/?retryWrites=true&w=majority&appName=tangle",
+    server_api=ServerApi('1'),
+    maxPoolSize=50,
+    wtimeoutMS=2500,
+    connectTimeoutMS=2000,
+    serverSelectionTimeoutMS=3000
+)
+
 
 # Send a ping to confirm a successful connection
 try:
@@ -333,7 +343,7 @@ def receipts():
         short_term = coll.find_one({"_email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
         medium_term = coll.find_one({"_email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
         long_term = coll.find_one({"_email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
-        
+
         return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
 
 @app.route("/about")
