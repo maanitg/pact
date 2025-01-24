@@ -205,11 +205,10 @@
 
                     function cleanupForm() {
                         // Remove all event listeners
-                        form.off();
+                        $('musicForm').off();
                         // Clear checkbox and radio button references
                         $('input[type="checkbox"], input[type="radio"]').off();
-                        // Clear form data
-                        form[0].reset();
+                        
                     }
 
                     function validateCheckboxGroup(groupName) {
