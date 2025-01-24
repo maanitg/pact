@@ -13,10 +13,10 @@
     <body>
 
         <nav class="top-nav">
-            <a href="/" class="nav-button">Home</a>
-            <a href="/about" class="nav-button">About</a>
-            <a href="/receipts" class="nav-button">Receipts</a>
-            <a href="/match" class="nav-button">Match</a>
+            <a href="/" class="nav-button" data-link="home">Home</a>
+            <a href="/about" class="nav-button" data-link="about">About</a>
+            <a href="/receipts" class="nav-button" data-link="receipts">Receipts</a>
+            <a href="/match" class="nav-button" data-link="match">Match</a>
         </nav>
 
         <div class="video-background">
@@ -100,6 +100,23 @@
                         }
                     }, 1000);
                 }
+
+                // Cleanup function for video elements
+                function cleanupVideo() {
+                    if (video) {
+                        video.pause();
+                        video.removeAttribute('src');
+                        video.load();
+                        video = null;
+                    }
+                    if (videoBackground) {
+                        videoBackground.innerHTML = '';
+                    }
+                }
+
+                // Add cleanup on page unload
+                window.addEventListener('unload', cleanupVideo);
+            
             });
         </script>
         

@@ -62,11 +62,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
-cache = Cache(config={
-    'CACHE_TYPE': 'SimpleCache',
-    'CACHE_DEFAULT_TIMEOUT': 300
-})
-
 def get_password_by_email(email):
     # Find the document with the given email
     document = coll.find_one({"_email": email})
@@ -184,7 +179,6 @@ def login():
     else:
         return jsonify({'success': False, 'message': 'Incorrect password, try again.'})
 
-    # add forgot password button
 
 @app.route("/form")
 def form():
@@ -249,79 +243,97 @@ def redirectPage():
     
 def get_token():
     token_info = session.get(TOKEN_INFO, None)
+    if token_info:
+        now = int(time.time())
+        if token_info['expires_at'] - now < 60:
+            sp_oauth = create_spotify_oauth()
+            token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+            session[TOKEN_INFO] = token_info
     return token_info
+
+def clear_spotify_session():
+    if TOKEN_INFO in session:
+        del session[TOKEN_INFO]
 
 @app.route("/receipts")
 def receipts():
     if globals()["USER"] is None:
         return render_template('receiptNoUser.html');
     else:
+        
         current_user_name = globals()["USER"]
         if not globals()["STORED"]:
-            user_token = get_token()
-            sp = spotipy.Spotify(
-                auth=user_token['access_token']
-            )
-            short_tracks_temp = sp.current_user_top_tracks(
-                limit=10,
-                time_range=SHORT_TERM,
-            )
-            medium_tracks_temp = sp.current_user_top_tracks(
-                limit=10,
-                time_range=MEDIUM_TERM,
-            )
-            long_tracks_temp = sp.current_user_top_tracks(
-                limit=10,
-                time_range=LONG_TERM,
-            )
-            medium_art_temp = sp.current_user_top_artists(
-                limit=20,
-                time_range=MEDIUM_TERM,
-            )
-            long_art_temp = sp.current_user_top_artists(
-                limit=20,
-                time_range=LONG_TERM,
-            )
-            short_tracks = []
-            for track in short_tracks_temp['items']:
-                short_tracks.append(track['name'])
-            medium_tracks = []
-            for track in medium_tracks_temp['items']:
-                medium_tracks.append(track['name'])
-            long_tracks = []
-            for track in long_tracks_temp['items']:
-                long_tracks.append(track['name'])
-            medium_art = []
-            for artist in medium_art_temp['items']:
-                medium_art.append(artist['name'])
-            long_art = []
-            for artist in long_art_temp['items']:
-                long_art.append(artist['name'])
+            sp = None
+            try:
+                user_token = get_token()
+                if user_token:  
+                    sp = spotipy.Spotify(
+                        auth=user_token['access_token']
+                    )
+                    short_tracks_temp = sp.current_user_top_tracks(
+                        limit=10,
+                        time_range=SHORT_TERM,
+                    )
+                    medium_tracks_temp = sp.current_user_top_tracks(
+                        limit=10,
+                        time_range=MEDIUM_TERM,
+                    )
+                    long_tracks_temp = sp.current_user_top_tracks(
+                        limit=10,
+                        time_range=LONG_TERM,
+                    )
+                    medium_art_temp = sp.current_user_top_artists(
+                        limit=20,
+                        time_range=MEDIUM_TERM,
+                    )
+                    long_art_temp = sp.current_user_top_artists(
+                        limit=20,
+                        time_range=LONG_TERM,
+                    )
+                    short_tracks = []
+                    for track in short_tracks_temp['items']:
+                        short_tracks.append(track['name'])
+                    medium_tracks = []
+                    for track in medium_tracks_temp['items']:
+                        medium_tracks.append(track['name'])
+                    long_tracks = []
+                    for track in long_tracks_temp['items']:
+                        long_tracks.append(track['name'])
+                    medium_art = []
+                    for artist in medium_art_temp['items']:
+                        medium_art.append(artist['name'])
+                    long_art = []
+                    for artist in long_art_temp['items']:
+                        long_art.append(artist['name'])
 
-            medium_alb = []
-            for track in medium_tracks_temp['items']:
-                medium_alb.append(track['album'])
-            long_alb = []
-            for track in long_tracks_temp['items']:
-                long_alb.append(track['album'])
+                    medium_alb = []
+                    for track in medium_tracks_temp['items']:
+                        medium_alb.append(track['album'])
+                    long_alb = []
+                    for track in long_tracks_temp['items']:
+                        long_alb.append(track['album'])
 
-            medium_gen = []
-            for artist in medium_art_temp['items']:
-                medium_gen.extend(artist['genres'])
-            medium_gen = sorted(list(set(medium_gen)))
-            long_gen = []
-            for artist in long_art_temp['items']:
-                long_gen.extend(artist['genres'])
-            long_gen = sorted(list(set(long_gen)))
-            
-            coll.update_one({ "_email": globals()["USER"] },
-                { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
-            )
+                    medium_gen = []
+                    for artist in medium_art_temp['items']:
+                        medium_gen.extend(artist['genres'])
+                    medium_gen = sorted(list(set(medium_gen)))
+                    long_gen = []
+                    for artist in long_art_temp['items']:
+                        long_gen.extend(artist['genres'])
+                    long_gen = sorted(list(set(long_gen)))
+                    
+                    coll.update_one({ "_email": globals()["USER"] },
+                        { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
+                    )
+            finally:
+                if sp:
+                    sp.close()
 
             
         short_term = coll.find_one({"_email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
         medium_term = coll.find_one({"_email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
         long_term = coll.find_one({"_email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
+        
         return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
 
 @app.route("/about")
@@ -361,15 +373,31 @@ def _jinja2_filter_miliseconds(time, fmt=None):
         return str(minutes) + ":0" + str(seconds)
     return str(minutes) + ":" + str(seconds ) 
 
-@app.teardown_appcontext
-def close_db_connection(error):
-    if hasattr(g, 'mongo_client'):
-        g.mongo_client.close()
 
+def get_db():
+    if 'mongo_client' not in g:
+        g.mongo_client = MongoClient(uri, 
+            server_api=ServerApi('1'),
+            maxPoolSize=50,
+            wtimeoutMS=2500,
+            connectTimeoutMS=2000,
+            serverSelectionTimeoutMS=3000
+        )
+        g.db = g.mongo_client.tangle
+        g.coll = g.db.users
+    return g.coll
+
+@app.teardown_appcontext
+def close_db(e=None):
+    mongo_client = g.pop('mongo_client', None)
+    if mongo_client is not None:
+        mongo_client.close()
 
 @app.before_request
-def cleanup_session():
+def before_request():
     session.permanent = True
     app.permanent_session_lifetime = timedelta(minutes=60)
-
+    g.user = None
+    if 'user' in session:
+        g.user = session['user']
 

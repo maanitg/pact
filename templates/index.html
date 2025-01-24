@@ -10,12 +10,11 @@
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     </head>
 
-
     <nav class="top-nav">
-        <a href="/" class="nav-button">Home</a>
-        <a href="/about" class="nav-button">About</a>
-        <a href="/receipts" class="nav-button">Receipts</a>
-        <a href="/match" class="nav-button">Match</a>
+        <a href="/" class="nav-button" data-link="home">Home</a>
+        <a href="/about" class="nav-button" data-link="about">About</a>
+        <a href="/receipts" class="nav-button" data-link="receipts">Receipts</a>
+        <a href="/match" class="nav-button" data-link="match">Match</a>
     </nav>
 
     <body>
@@ -89,9 +88,16 @@
             document.addEventListener('DOMContentLoaded', function() {
                 const videoBackground = document.querySelector('.video-background');
                 const video = document.getElementById('myVideo');
+                const navLinks = document.querySelectorAll('.nav-button');
                 let frameCount = 0;
                 let lastTime = performance.now();
                 let freezeCount = 0;
+                
+
+                // Add event listeners
+                navLinks.forEach(link => {
+                    link.addEventListener('click', handleNavigation);
+                });
                 
                 // Initially start with video
                 video.setAttribute('autoplay', '');
@@ -137,11 +143,45 @@
                         }
                     }, 1000);
                 }
+
+                // Cleanup function
+                function cleanupNavigation() {
+                    navLinks.forEach(link => {
+                        link.removeEventListener('click', handleNavigation);
+                    });
+                }
+
+                // Cleanup function for video elements
+                function cleanupVideo() {
+                    if (video) {
+                        video.pause();
+                        video.removeAttribute('src');
+                        video.load();
+                        video = null;
+                    }
+                    if (videoBackground) {
+                        videoBackground.innerHTML = '';
+                    }
+                }
+
+                // Add cleanup on page unload
+                window.addEventListener('unload', cleanupVideo);
+                window.addEventListener('unload', cleanupNavigation);
             });
         </script>
         
         <script defer>
             $(document).ready(function() {
+
+                function cleanupForm() {
+                    // Remove all event listeners
+                    form.off();
+                    // Clear checkbox and radio button references
+                    $('input[type="checkbox"], input[type="radio"]').off();
+                    // Clear form data
+                    form[0].reset();
+                }
+
                 $('#loginButton').click(function() {
                     $(this).hide();
                     $('#registerForm').hide();  
@@ -193,6 +233,7 @@
                         success: function(response) {
                             $('#message').text(response.message);
                             if (response.success) {
+                                cleanupForm();
                                 $('#emailForm').hide();
                                 window.location.replace('/form');
                             }
