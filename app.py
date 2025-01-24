@@ -62,8 +62,6 @@ app.config['MAIL_PASSWORD'] = 'ovuagvufsbfqwdng'
 app.secret_key = SECRET_KEY
 #cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
-USER = None
-STORED = False
 MATCHED = False
 mail = Mail(app)
 serializer = (URLSafeTimedSerializer(app.config['SECRET_KEY']))
@@ -155,7 +153,7 @@ def set_password():
         coll.update_one({ "email": email },
         { "$set": { "_password": password }  }
         )
-        globals()["USER"] = email
+        session['user'] = email
         return jsonify({'success': True, 'message': 'Password set!'})
     else:
         return jsonify({'success': False, 'message': 'Invalid email address.'})
@@ -179,10 +177,10 @@ def login():
 
     if password == p:
     
-        globals()["USER"] = email
+        session['user'] = email
         
-        if coll.find_one({'email': globals()["USER"], '_stored': 1}):
-            globals()["STORED"] = True
+        if coll.find_one({'email': session['user'], '_stored': 1}):
+            session['stored'] = True
            
         return jsonify({'success': True, 'message': 'Logged in!'})    
     else:
@@ -191,7 +189,7 @@ def login():
 
 @app.route("/form")
 def form():
-    if not coll.find_one({'email': globals()["USER"], '_stored': 1}):
+    if not coll.find_one({'email': session['user'], '_stored': 1}):
         return render_template('form.html')
     else:
         return redirect(url_for("receipts", _external=True))
@@ -207,7 +205,7 @@ def submit_form():
         
         # Process and upload data to MongoDB
         coll.update_one(
-            {"email": globals()["USER"]},
+            {"email": session['user']},
             {"$set": {
                 "_firstname": data["firstName"],
                 "_lastname": data["lastName"],
@@ -233,7 +231,7 @@ def submit_form():
 @app.route("/loginSpotify")
 def loginSpotify():
 
-    if not coll.find_one({'email': globals()["USER"], '_stored': 1}):
+    if not coll.find_one({'email': session['user'], '_stored': 1}):
         print("Accessing spotify...")
         sp_oauth = create_spotify_oauth()
         auth_url = sp_oauth.get_authorize_url()
@@ -251,7 +249,7 @@ def redirectPage():
     session[TOKEN_INFO] = token_info
 
     coll.update_one(
-            {"email": globals()["USER"]},
+            {"email": session['user']},
             {"$set": {
                 "_connected": 1,
                 "spotify_access_token": token_info['access_token'],
@@ -265,7 +263,9 @@ def redirectPage():
     
 def get_token():
     token_info = session.get(TOKEN_INFO, None)
-    if token_info:
+    if not token_info:
+        return redirect(url_for("loginSpotify"))
+    else:
         now = int(time.time())
         if token_info['expires_at'] - now < 60:
             sp_oauth = create_spotify_oauth()
@@ -275,22 +275,21 @@ def get_token():
 
 @app.route("/receipts")
 def receipts():
-    if ((globals()["USER"] is None) or (coll.find_one({'email': globals()["USER"], '_connected': 1}) is None)):
+    if ((session['user'] is None) or (coll.find_one({'email': session['user'], '_connected': 1}) is None)):
         return render_template('receiptNoUser.html');
     else:
-        user_data = coll.find_one({"email": globals()["USER"]})
+        user_data = coll.find_one({"email": session['user']})
         if not user_data or 'spotify_access_token' not in user_data:
             return redirect(url_for("loginSpotify"))
-        sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
-
-        current_user_name = globals()["USER"]
         
-        if not globals()["STORED"]:
+
+        current_user_name = session['user']
+
+        print (session['stored'])
+        if not session['stored']:
             user_token = get_token()
              
-            sp = spotipy.Spotify(
-                auth=user_token['access_token']
-            )
+            sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
             short_tracks_temp = sp.current_user_top_tracks(
                 limit=10,
                 time_range=SHORT_TERM,
@@ -343,13 +342,13 @@ def receipts():
                 long_gen.extend(artist['genres'])
             long_gen = sorted(list(set(long_gen)))
             
-            coll.update_one({ "email": globals()["USER"] },
+            coll.update_one({ "email": session['user'] },
                 { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
             )
 
-        short_term = coll.find_one({"email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
-        medium_term = coll.find_one({"email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
-        long_term = coll.find_one({"email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
+        short_term = coll.find_one({"email": session['user']}, {"_short_tracks_obj": 1, "_id": 0})
+        medium_term = coll.find_one({"email": session['user']}, {"_med_tracks_obj": 1, "_id": 0})
+        long_term = coll.find_one({"email": session['user']}, {"_long_tracks_obj": 1, "_id": 0})
 
         return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
 
