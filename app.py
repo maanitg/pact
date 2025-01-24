@@ -154,6 +154,7 @@ def set_password():
         { "$set": { "_password": password }  }
         )
         session['user'] = email
+        session['stored'] = False
         return jsonify({'success': True, 'message': 'Password set!'})
     else:
         return jsonify({'success': False, 'message': 'Invalid email address.'})
@@ -178,6 +179,7 @@ def login():
     if password == p:
     
         session['user'] = email
+        session['stored'] = False
         
         if coll.find_one({'email': session['user'], '_stored': 1}):
             session['stored'] = True
@@ -284,8 +286,7 @@ def receipts():
 
         current_user_name = session['user']
 
-        print (session['stored'])
-        if not session['stored']:
+        if (session['stored'] is None) or (not session['stored']):
             user_token = get_token()
              
             sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
