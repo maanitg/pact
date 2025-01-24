@@ -136,15 +136,14 @@ def confirm_email(token):
         return 'The confirmation link is invalid or has expired.'
     
     try:
-        result = coll.update_one(
-            {"_email": email},
-            {"$set": {"confirmed": True, "confirmed_on": datetime.now()}},
-            upsert=True
-        )
-        if result.upserted_id:
-            print(f"New user confirmed: {email}")
+        if not (email is None):
+            coll.update_one(
+                {"_email": email},
+                {"$set": {"confirmed": True, "confirmed_on": datetime.now()}},
+                upsert=True
+            )
         else:
-            print(f"Existing user confirmed: {email}")
+            print("Email is None")
     except DuplicateKeyError:
         # The document was inserted by a concurrent request
         coll.update_one(
@@ -170,8 +169,6 @@ def set_password():
         upsert=True
     )
     
-
-
     return jsonify({'success': True, 'message': 'Password set!'})
 
     
