@@ -283,7 +283,8 @@ def receipts():
             return redirect(url_for("loginSpotify"))
         sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
 
-        #current_user_name = globals()["USER"]
+        current_user_name = globals()["USER"]
+        
         if not globals()["STORED"]:
             user_token = get_token()
              
