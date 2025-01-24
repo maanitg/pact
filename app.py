@@ -14,6 +14,7 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, ValidationError
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+from pymongo.errors import DuplicateKeyError
 
 
 # database set up
@@ -40,7 +41,7 @@ except Exception as e:
 
 db = client.tangle
 coll = db.users
-
+coll.delete_many({"_email": None})
 
 CLIENT_ID = "ff513e5fd4dd4e7483ee15b1f58215aa"
 CLIENT_SECRET = "0b159e97f65d4ecc86ffcc6ceb82afd7"
@@ -134,35 +135,44 @@ def confirm_email(token):
     except:
         return 'The confirmation link is invalid or has expired.'
     
-    print(email)
-    existing_user = coll.find_one({"_email": email})
-    if existing_user:
-        # Update the existing user
+    try:
+        result = coll.update_one(
+            {"_email": email},
+            {"$set": {"confirmed": True, "confirmed_on": datetime.now()}},
+            upsert=True
+        )
+        if result.upserted_id:
+            print(f"New user confirmed: {email}")
+        else:
+            print(f"Existing user confirmed: {email}")
+    except DuplicateKeyError:
+        # The document was inserted by a concurrent request
         coll.update_one(
             {"_email": email},
             {"$set": {"confirmed": True, "confirmed_on": datetime.now()}}
         )
-    else:
-        # Insert a new user
-        coll.insert_one({
-            "_email": email,
-            "confirmed": True,
-            "confirmed_on": datetime.now()
-        })
+        print(f"User confirmed after conflict: {email}")
+    
     return render_template('set_password.html', email=email)
+
 
 @app.route('/set_password/', methods=['POST'])
 def set_password():
+    coll.delete_many({"_email": None})
     email = request.form.get('setEmail') 
     print(email)
-    if (coll.find_one({'_email': email})):
-        password = request.form.get('password')
-        coll.update_one({ "_email": email },
-            { "$set": { "_password": password }  }
-        )
-        return jsonify({'success': True, 'message': 'Password set!'})
-    else:
-        return jsonify({'success': False, 'message': 'Please enter your provided email address.'})
+    
+    password = request.form.get('password')
+    if not email or email.strip() == "":
+        return jsonify({'success': False, 'message': 'Invalid email address.'})
+    coll.update_one({ "_email": email },
+        { "$set": { "_password": password }  },
+        upsert=True
+    )
+    
+
+
+    return jsonify({'success': True, 'message': 'Password set!'})
 
     
 @app.route('/login', methods=['POST'])
@@ -235,6 +245,7 @@ def submit_form():
 def loginSpotify():
 
     if not coll.find_one({'_email': globals()["USER"], '_stored': 1}):
+        print("Accessing spotify...")
         sp_oauth = create_spotify_oauth()
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
@@ -249,6 +260,15 @@ def redirectPage():
     code = request.args.get('code') # returns token
     token_info = sp_oauth.get_access_token(code)
     session[TOKEN_INFO] = token_info
+
+    coll.update_one(
+            {"_email": globals()["USER"]},
+            {"$set": {
+                "_connected": 1
+            }},
+            upsert=True
+        )
+
     return redirect(url_for("receipts", _external=True))
     
 def get_token():
@@ -267,7 +287,9 @@ def clear_spotify_session():
 
 @app.route("/receipts")
 def receipts():
-    if globals()["USER"] is None:
+    if ((globals()["USER"] is None) or (coll.find_one({'_email': globals()["USER"], '_connected': 1}) is None)):
+        print(globals()["USER"])
+        print(coll.find_one({'_email': globals()["USER"], '_connected': 1}))
         return render_template('receiptNoUser.html');
     else:
         
@@ -333,7 +355,7 @@ def receipts():
             coll.update_one({ "_email": globals()["USER"] },
                 { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
             )
-            
+
         short_term = coll.find_one({"_email": globals()["USER"]}, {"_short_tracks_obj": 1, "_id": 0})
         medium_term = coll.find_one({"_email": globals()["USER"]}, {"_med_tracks_obj": 1, "_id": 0})
         long_term = coll.find_one({"_email": globals()["USER"]}, {"_long_tracks_obj": 1, "_id": 0})
@@ -377,19 +399,6 @@ def _jinja2_filter_miliseconds(time, fmt=None):
         return str(minutes) + ":0" + str(seconds)
     return str(minutes) + ":" + str(seconds ) 
 
-
-def get_db():
-    if 'mongo_client' not in g:
-        g.mongo_client = MongoClient(uri, 
-            server_api=ServerApi('1'),
-            maxPoolSize=50,
-            wtimeoutMS=2500,
-            connectTimeoutMS=2000,
-            serverSelectionTimeoutMS=3000
-        )
-        g.db = g.mongo_client.tangle
-        g.coll = g.db.users
-    return g.coll
 
 @app.teardown_appcontext
 def close_db(e=None):
