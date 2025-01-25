@@ -267,17 +267,17 @@ def redirectPage():
 
     return redirect(url_for("receipts", _external=True))
     
-def get_token():
-    token_info = session.get(TOKEN_INFO, None)
-    if not token_info:
-        return redirect(url_for("loginSpotify"))
-    else:
-        now = int(time.time())
-        if token_info['expires_at'] - now < 60:
-            sp_oauth = create_spotify_oauth(session['session_id'])
-            token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-            session[TOKEN_INFO] = token_info
-    return token_info
+#def get_token():
+#    token_info = session.get(TOKEN_INFO, None)
+#    if not token_info:
+#        return redirect(url_for("loginSpotify"))
+#    else:
+#        now = int(time.time())
+#        if token_info['expires_at'] - now < 60:
+#            sp_oauth = create_spotify_oauth(session['session_id'])
+#            token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+#            session[TOKEN_INFO] = token_info
+#    return token_info
 
 @app.route("/receipts")
 def receipts():
@@ -292,9 +292,9 @@ def receipts():
         current_user_name = session['user']
 
         if (session['stored'] is None) or (not session['stored']):
-            token_info = get_token()
+#            token_info = get_token()
              
-            sp = spotipy.Spotify(auth=token_info['access_token'],)
+            sp = spotipy.Spotify(auth=user_data['spotify_access_token'],)
             short_tracks_temp = sp.current_user_top_tracks(
                 limit=10,
                 time_range=SHORT_TERM,
