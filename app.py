@@ -294,7 +294,8 @@ def receipts():
         if (session['stored'] is None) or (not session['stored']):
 #            token_info = get_token()
              
-            sp = spotipy.Spotify(auth=user_data['spotify_access_token'],)
+            sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
+            print(user_data['spotify_access_token'])
             short_tracks_temp = sp.current_user_top_tracks(
                 limit=10,
                 time_range=SHORT_TERM,
