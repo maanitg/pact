@@ -193,7 +193,8 @@ def login():
 
 @app.route("/form")
 def form():
-
+    session_id = session.get('session_id', str(uuid.uuid4()))
+    session['session_id'] = session_id
     if not coll.find_one({'email': session['user'], '_stored': 1}):
         return render_template('form.html')
     else:
@@ -238,7 +239,7 @@ def loginSpotify():
 
     if not coll.find_one({'email': session['user'], '_stored': 1}):
         print("Accessing spotify...")
-        sp_oauth = create_spotify_oauth()
+        sp_oauth = create_spotify_oauth(session['session_id'])
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
     else:
@@ -247,9 +248,8 @@ def loginSpotify():
 
 @app.route("/redirectPage")
 def redirectPage():
-    session_id = session.get('session_id', str(uuid.uuid4()))
-    session['session_id'] = session_id
-    sp_oauth = create_spotify_oauth(session_id)
+    
+    sp_oauth = create_spotify_oauth(session['session_id'])
     code = request.args.get('code') # returns token
     token_info = sp_oauth.get_access_token(code)
     session[TOKEN_INFO] = token_info
@@ -274,7 +274,7 @@ def get_token():
     else:
         now = int(time.time())
         if token_info['expires_at'] - now < 60:
-            sp_oauth = create_spotify_oauth()
+            sp_oauth = create_spotify_oauth(session['session_id'])
             token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
             session[TOKEN_INFO] = token_info
     return token_info
