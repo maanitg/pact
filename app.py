@@ -91,6 +91,7 @@ def create_spotify_oauth():
 
 @app.route("/")
 def index():
+    session.clear()
     return render_template('index.html', title='Welcome')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -287,7 +288,7 @@ def receipts():
         current_user_name = session['user']
 
         if (session['stored'] is None) or (not session['stored']):
-            user_token = get_token()
+            token_info = get_token()
              
             sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
             short_tracks_temp = sp.current_user_top_tracks(
