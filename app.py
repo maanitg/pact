@@ -1,3 +1,4 @@
+import uuid
 from flask import Flask, request, url_for, session, redirect, render_template, jsonify, g
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
@@ -80,17 +81,18 @@ def get_password_by_email(email):
         # If no document is found with the given email
         return None
 
-def create_spotify_oauth():
+def create_spotify_oauth(session_id):
     return SpotifyOAuth(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
         redirect_uri=url_for("redirectPage",_external=True, _scheme='https'),
-        scope="user-top-read user-library-read"
+        scope="user-top-read user-library-read",
+        cache_path=f'.spotipyoauthcache_{session_id}'
     )
 
 @app.route("/")
 def index():
-    session.clear()
+    
     return render_template('index.html', title='Welcome')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -153,6 +155,7 @@ def set_password():
         coll.update_one({ "email": email },
         { "$set": { "_password": password }  }
         )
+        session.clear()
         session['user'] = email
         session['stored'] = False
         return jsonify({'success': True, 'message': 'Password set!'})
@@ -166,7 +169,6 @@ def set_password():
 @app.route('/login', methods=['POST'])
 def login():
 
- 
     email = request.form.get('email')
 
     if not email.endswith('@stanford.edu'):
@@ -177,7 +179,7 @@ def login():
     p = get_password_by_email(email)
 
     if password == p:
-    
+        session.clear()
         session['user'] = email
         session['stored'] = False
         
@@ -191,6 +193,7 @@ def login():
 
 @app.route("/form")
 def form():
+
     if not coll.find_one({'email': session['user'], '_stored': 1}):
         return render_template('form.html')
     else:
@@ -244,7 +247,9 @@ def loginSpotify():
 
 @app.route("/redirectPage")
 def redirectPage():
-    sp_oauth = create_spotify_oauth()
+    session_id = session.get('session_id', str(uuid.uuid4()))
+    session['session_id'] = session_id
+    sp_oauth = create_spotify_oauth(session_id)
     code = request.args.get('code') # returns token
     token_info = sp_oauth.get_access_token(code)
     session[TOKEN_INFO] = token_info
