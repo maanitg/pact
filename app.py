@@ -52,7 +52,6 @@ SHORT_TERM = "short_term"
 LONG_TERM = "long_term"
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -290,7 +289,7 @@ def receipts():
         if (session['stored'] is None) or (not session['stored']):
             token_info = get_token()
              
-            sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
+            sp = spotipy.Spotify(auth=token_info['access_token'],)
             short_tracks_temp = sp.current_user_top_tracks(
                 limit=10,
                 time_range=SHORT_TERM,
@@ -350,6 +349,9 @@ def receipts():
         short_term = coll.find_one({"email": session['user']}, {"_short_tracks_obj": 1, "_id": 0})
         medium_term = coll.find_one({"email": session['user']}, {"_med_tracks_obj": 1, "_id": 0})
         long_term = coll.find_one({"email": session['user']}, {"_long_tracks_obj": 1, "_id": 0})
+
+        if os.path.exists(".cache"): 
+            os.remove(".cache")
 
         return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
 
