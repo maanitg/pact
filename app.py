@@ -150,6 +150,8 @@ def set_password():
         
         session['user'] = email
         session['stored'] = False
+        session['session_id'] = session.get('session_id', str(uuid.uuid4()))
+        #fixed session id
         return jsonify({'success': True, 'message': 'Password set!'})
     else:
         return jsonify({'success': False, 'message': 'Invalid email address.'})
@@ -162,7 +164,6 @@ def set_password():
 def login():
 
     email = request.form.get('email')
-
     if not email.endswith('@stanford.edu'):
         return jsonify({'success': False, 'message': 'Please enter a Stanford email address.'})
     if not coll.find_one({'email': email}):
