@@ -228,60 +228,56 @@ def create_spotify_oauth(session_id):
     return SpotifyOAuth(
         client_id=CLIENT_ID,
         client_secret=CLIENT_SECRET,
-        state=session_id,
         redirect_uri=url_for("redirectPage",_external=True, _scheme='https'),
         scope="user-top-read user-library-read",
         cache_path=f'.spotipyoauthcache_{session_id}'
     )
 
-# prompt user to login to Spotify, unless they're already logged in
+# Request auth to access data
 @app.route("/loginSpotify")
 def loginSpotify():
 
     if not coll.find_one({'email': session['user'], '_stored': 1}):
         print("Accessing spotify...")
-        sp_oauth = create_spotify_oauth(session['session_id'])
-        auth_url = sp_oauth.get_authorize_url()
-        return redirect(auth_url)
+        session['sp_oauth'] = create_spotify_oauth(session['session_id'])
+        auth_url = session['sp_oauth'].get_authorize_url()
+        return redirect(auth_url) # prompt user to login to Spotify
     else:
         print("redirecting to receipts, because stored is true")
         return redirect(url_for("receipts", _external=True))
 
 
 
-def get_token():
-    token_info = session.get(TOKEN_INFO, None)
+def get_token(code):
+    token_info = session['sp_oauth'].get_access_token(code)
     if not token_info:
         return redirect(url_for("loginSpotify"))
     else:
         now = int(time.time())
         if token_info['expires_at'] - now < 60:
-            sp_oauth = create_spotify_oauth(session['session_id'])
-            token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-            session[TOKEN_INFO] = token_info
+            token_info = session['sp_oauth'].refresh_access_token(token_info['refresh_token'])
     return token_info
 
 # fetch and store data from Spotify
 @app.route("/redirectPage")
 def redirectPage():
     
-    sp_oauth = create_spotify_oauth(session['session_id'])
+    # request access and refresh tokens
     code = request.args.get('code') # returns token
-    token_info = sp_oauth.get_access_token(code)
-    session[TOKEN_INFO] = token_info
-
+    session[TOKEN_INFO] = get_token(code)
+    
+    # retrieve data from API using access token
     coll.update_one(
             {"email": session['user']},
             {"$set": {
-                "spotify_access_token": token_info['access_token'],
-                "spotify_refresh_token": token_info['refresh_token'],
-                "token_expiry": token_info['expires_at']
+                "spotify_access_token": session[TOKEN_INFO]['access_token'],
+                "spotify_refresh_token": session[TOKEN_INFO]['refresh_token'],
+                "token_expiry": session[TOKEN_INFO]['expires_at']
             }},
             upsert=True
         )
-    
    # if data not already stored:
-    sp = spotipy.Spotify(auth=token_info['access_token'])
+    sp = spotipy.Spotify(oauth_manager=session['sp_oauth'], auth=session[TOKEN_INFO]['access_token'])
     print(sp.current_user()['display_name'])
     short_tracks_temp = sp.current_user_top_tracks(
         limit=10,
@@ -361,7 +357,7 @@ def redirectPage():
 
 @app.route("/receipts")
 def receipts():
-    if ((session['user'] is None) or (coll.find_one({'email': session['user'], '_connected': 1}) is None)):
+    if ((session['user'] is None) or (coll.find_one({'email': session['user'], '_stored': 1}) is None)):
         return render_template('receiptNoUser.html');
     else:
 
