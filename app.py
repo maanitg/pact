@@ -1,5 +1,6 @@
 import uuid
 from flask import Flask, request, url_for, session, redirect, render_template, jsonify, g
+from flask_session import Session
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from flask_mail import Mail, Message
@@ -17,11 +18,6 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo.errors import DuplicateKeyError
 
-
-# database set up
-uri = "mongodb+srv://maanit:We'reall50%25banana@tangle.h9qzr.mongodb.net/?retryWrites=true&w=majority&appName=tangle"
-# Create a new client and connect to the server
-#client = MongoClient(uri, server_api=ServerApi('1'), maxPoolSize=50, wtimeoutms=2500, connectTimeoutMS=2000, serverSelectionTimeoutMS=3000)
 
 client = MongoClient(
     "mongodb+srv://maanit:We'reall50%25banana@tangle.h9qzr.mongodb.net/?retryWrites=true&w=majority&appName=tangle",
@@ -59,10 +55,14 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_USERNAME'] = 'fotoxre@gmail.com'
 app.config['MAIL_PASSWORD'] = 'ovuagvufsbfqwdng'
+app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
 app.secret_key = SECRET_KEY
 #cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
 
 MATCHED = False
+
 mail = Mail(app)
 serializer = (URLSafeTimedSerializer(app.config['SECRET_KEY']))
 
@@ -81,18 +81,10 @@ def get_password_by_email(email):
         # If no document is found with the given email
         return None
 
-def create_spotify_oauth(session_id):
-    return SpotifyOAuth(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
-        redirect_uri=url_for("redirectPage",_external=True, _scheme='https'),
-        scope="user-top-read user-library-read",
-        cache_path=f'.spotipyoauthcache_{session_id}'
-    )
+
 
 @app.route("/")
 def index():
-    
     return render_template('index.html', title='Welcome')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -155,7 +147,7 @@ def set_password():
         coll.update_one({ "email": email },
         { "$set": { "_password": password }  }
         )
-        session.clear()
+        
         session['user'] = email
         session['stored'] = False
         return jsonify({'success': True, 'message': 'Password set!'})
@@ -182,6 +174,7 @@ def login():
         session.clear()
         session['user'] = email
         session['stored'] = False
+        session['session_id'] = session.get('session_id', str(uuid.uuid4()))
         
         if coll.find_one({'email': session['user'], '_stored': 1}):
             session['stored'] = True
@@ -193,12 +186,11 @@ def login():
 
 @app.route("/form")
 def form():
-    session_id = session.get('session_id', str(uuid.uuid4()))
-    session['session_id'] = session_id
-    if not coll.find_one({'email': session['user'], '_stored': 1}):
+    
+    if not coll.find_one({'email': session['user'], '_profile': 1}):
         return render_template('form.html')
     else:
-        return redirect(url_for("receipts", _external=True))
+        return redirect(url_for("loginSpotify", _external=True))
 
 
 @app.route('/submit-form', methods=['POST'])
@@ -220,6 +212,7 @@ def submit_form():
                 "_friendpartner": data["lookingFor"],  # This will be an array like ["Friend", "Partner"]
                 "_partner": data["attractedTo"],       # This will be an array like ["Male", "Female"]
                 "_redflag": data["spotifyRedFlag"],
+                "_profile": 1
             }},
             upsert=True
         )
@@ -231,9 +224,17 @@ def submit_form():
 
    
 
+def create_spotify_oauth(session_id):
+    return SpotifyOAuth(
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        state=session_id,
+        redirect_uri=url_for("redirectPage",_external=True, _scheme='https'),
+        scope="user-top-read user-library-read",
+        cache_path=f'.spotipyoauthcache_{session_id}'
+    )
 
-
-
+# prompt user to login to Spotify, unless they're already logged in
 @app.route("/loginSpotify")
 def loginSpotify():
 
@@ -243,9 +244,24 @@ def loginSpotify():
         auth_url = sp_oauth.get_authorize_url()
         return redirect(auth_url)
     else:
+        print("redirecting to receipts, because stored is true")
         return redirect(url_for("receipts", _external=True))
 
 
+
+def get_token():
+    token_info = session.get(TOKEN_INFO, None)
+    if not token_info:
+        return redirect(url_for("loginSpotify"))
+    else:
+        now = int(time.time())
+        if token_info['expires_at'] - now < 60:
+            sp_oauth = create_spotify_oauth(session['session_id'])
+            token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+            session[TOKEN_INFO] = token_info
+    return token_info
+
+# fetch and store data from Spotify
 @app.route("/redirectPage")
 def redirectPage():
     
@@ -257,100 +273,103 @@ def redirectPage():
     coll.update_one(
             {"email": session['user']},
             {"$set": {
-                "_connected": 1,
                 "spotify_access_token": token_info['access_token'],
                 "spotify_refresh_token": token_info['refresh_token'],
                 "token_expiry": token_info['expires_at']
             }},
             upsert=True
         )
+    
+   # if data not already stored:
+    sp = spotipy.Spotify(auth=token_info['access_token'])
+    print(sp.current_user()['display_name'])
+    short_tracks_temp = sp.current_user_top_tracks(
+        limit=10,
+        time_range=SHORT_TERM,
+    )
+    medium_tracks_temp = sp.current_user_top_tracks(
+        limit=10,
+        time_range=MEDIUM_TERM,
+    )
+    long_tracks_temp = sp.current_user_top_tracks(
+        limit=10,
+        time_range=LONG_TERM,
+    )
+    medium_art_temp = sp.current_user_top_artists(
+        limit=20,
+        time_range=MEDIUM_TERM,
+    )
+    long_art_temp = sp.current_user_top_artists(
+        limit=20,
+        time_range=LONG_TERM,
+    )
+    short_tracks = []
+    for track in short_tracks_temp['items']:
+        short_tracks.append(track['name'])
+    medium_tracks = []
+    for track in medium_tracks_temp['items']:
+        medium_tracks.append(track['name'])
+    long_tracks = []
+    for track in long_tracks_temp['items']:
+        long_tracks.append(track['name'])
+    medium_art = []
+    for artist in medium_art_temp['items']:
+        medium_art.append(artist['name'])
+    long_art = []
+    for artist in long_art_temp['items']:
+        long_art.append(artist['name'])
+
+    medium_alb = []
+    for track in medium_tracks_temp['items']:
+        medium_alb.append(track['album'])
+    long_alb = []
+    for track in long_tracks_temp['items']:
+        long_alb.append(track['album'])
+
+    medium_gen = []
+    for artist in medium_art_temp['items']:
+        medium_gen.extend(artist['genres'])
+    medium_gen = sorted(list(set(medium_gen)))
+    long_gen = []
+    for artist in long_art_temp['items']:
+        long_gen.extend(artist['genres'])
+    long_gen = sorted(list(set(long_gen)))
+    
+    coll.update_one(
+        { "email": session['user'] },
+        { "$set": { "_stored": 1, 
+                   "_short_tracks_obj": short_tracks_temp,
+                    "_med_tracks_obj": medium_tracks_temp,
+                    "_long_tracks_obj": long_tracks_temp,
+                    "_short_tracks": short_tracks, 
+                    "_med_tracks": medium_tracks,
+                    "_long_tracks": long_tracks,
+                    "_med_art": medium_art, 
+                    "_long_art": long_art, 
+                    "_med_gen": medium_gen, 
+                    "_long_gen": long_gen, 
+                    "_med_alb": medium_alb, 
+                    "_long_alb": long_alb 
+        }},
+        upsert=True 
+    )
+
 
     return redirect(url_for("receipts", _external=True))
     
-#def get_token():
-#    token_info = session.get(TOKEN_INFO, None)
-#    if not token_info:
-#        return redirect(url_for("loginSpotify"))
-#    else:
-#        now = int(time.time())
-#        if token_info['expires_at'] - now < 60:
-#            sp_oauth = create_spotify_oauth(session['session_id'])
-#            token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-#            session[TOKEN_INFO] = token_info
-#    return token_info
+
 
 @app.route("/receipts")
 def receipts():
     if ((session['user'] is None) or (coll.find_one({'email': session['user'], '_connected': 1}) is None)):
         return render_template('receiptNoUser.html');
     else:
+
         user_data = coll.find_one({"email": session['user']})
         if not user_data or 'spotify_access_token' not in user_data:
             return redirect(url_for("loginSpotify"))
         
-
         current_user_name = session['user']
-
-        if (session['stored'] is None) or (not session['stored']):
-#            token_info = get_token()
-             
-            sp = spotipy.Spotify(auth=user_data['spotify_access_token'])
-            print(user_data['spotify_access_token'])
-            short_tracks_temp = sp.current_user_top_tracks(
-                limit=10,
-                time_range=SHORT_TERM,
-            )
-            medium_tracks_temp = sp.current_user_top_tracks(
-                limit=10,
-                time_range=MEDIUM_TERM,
-            )
-            long_tracks_temp = sp.current_user_top_tracks(
-                limit=10,
-                time_range=LONG_TERM,
-            )
-            medium_art_temp = sp.current_user_top_artists(
-                limit=20,
-                time_range=MEDIUM_TERM,
-            )
-            long_art_temp = sp.current_user_top_artists(
-                limit=20,
-                time_range=LONG_TERM,
-            )
-            short_tracks = []
-            for track in short_tracks_temp['items']:
-                short_tracks.append(track['name'])
-            medium_tracks = []
-            for track in medium_tracks_temp['items']:
-                medium_tracks.append(track['name'])
-            long_tracks = []
-            for track in long_tracks_temp['items']:
-                long_tracks.append(track['name'])
-            medium_art = []
-            for artist in medium_art_temp['items']:
-                medium_art.append(artist['name'])
-            long_art = []
-            for artist in long_art_temp['items']:
-                long_art.append(artist['name'])
-
-            medium_alb = []
-            for track in medium_tracks_temp['items']:
-                medium_alb.append(track['album'])
-            long_alb = []
-            for track in long_tracks_temp['items']:
-                long_alb.append(track['album'])
-
-            medium_gen = []
-            for artist in medium_art_temp['items']:
-                medium_gen.extend(artist['genres'])
-            medium_gen = sorted(list(set(medium_gen)))
-            long_gen = []
-            for artist in long_art_temp['items']:
-                long_gen.extend(artist['genres'])
-            long_gen = sorted(list(set(long_gen)))
-            
-            coll.update_one({ "email": session['user'] },
-                { "$set": { "_stored": 1, "_short_tracks_obj": short_tracks_temp, "_med_tracks_obj": medium_tracks_temp, "_long_tracks_obj": long_tracks_temp, "_short_tracks": short_tracks, "_med_tracks": medium_tracks, "_long_tracks": long_tracks, "_med_art": medium_art, "_long_art": long_art, "_med_gen": medium_gen, "_long_gen": long_gen, "_med_alb": medium_alb, "_long_alb": long_alb } } 
-            )
 
         short_term = coll.find_one({"email": session['user']}, {"_short_tracks_obj": 1, "_id": 0})
         medium_term = coll.find_one({"email": session['user']}, {"_med_tracks_obj": 1, "_id": 0})
@@ -359,7 +378,14 @@ def receipts():
         if os.path.exists(".cache"): 
             os.remove(".cache")
 
-        return render_template('receipt.html', user_display_name=current_user_name, short_term=short_term['_short_tracks_obj'], medium_term=medium_term['_med_tracks_obj'], long_term=long_term['_long_tracks_obj'], title="You've connected your Spotify. Matches are coming.", currentTime=gmtime())
+        return render_template('receipt.html', 
+                               user_display_name=current_user_name, 
+                               short_term=short_term['_short_tracks_obj'], 
+                               medium_term=medium_term['_med_tracks_obj'], 
+                               long_term=long_term['_long_tracks_obj'], 
+                               title="You've connected your Spotify. Matches are coming.", 
+                               currentTime=gmtime())
+    
 
 @app.route("/about")
 def about():
@@ -397,19 +423,3 @@ def _jinja2_filter_miliseconds(time, fmt=None):
     if seconds < 10: 
         return str(minutes) + ":0" + str(seconds)
     return str(minutes) + ":" + str(seconds ) 
-
-
-@app.teardown_appcontext
-def close_db(e=None):
-    mongo_client = g.pop('mongo_client', None)
-    if mongo_client is not None:
-        mongo_client.close()
-
-@app.before_request
-def before_request():
-    session.permanent = True
-    app.permanent_session_lifetime = timedelta(minutes=60)
-    g.user = None
-    if 'user' in session:
-        g.user = session['user']
-
