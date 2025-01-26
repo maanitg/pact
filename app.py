@@ -241,7 +241,9 @@ def loginSpotify():
     if not coll.find_one({'email': session['user'], '_stored': 1}):
         print("Accessing spotify...")
         session['sp_oauth'] = create_spotify_oauth(session['session_id'])
+        print(session['sp_oauth'])
         auth_url = session['sp_oauth'].get_authorize_url()
+        print(auth_url)
         return redirect(auth_url) # prompt user to login to Spotify
     else:
         print("redirecting to receipts, because stored is true")
