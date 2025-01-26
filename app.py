@@ -85,6 +85,7 @@ def get_password_by_email(email):
 
 @app.route("/")
 def index():
+    session['user'] = None
     return render_template('index.html', title='Welcome')
 
 @app.route('/register', methods=['GET', 'POST'])
