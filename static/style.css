@@ -963,6 +963,78 @@ label {
 .confirm-grid textarea { min-height: 190px; resize: vertical; box-sizing: border-box; }
 .full-label { margin-top: 20px; }
 
+.confirm-help {
+  margin: -8px 0 20px;
+  padding: 13px 15px;
+  border-left: 3px solid #79f7d4;
+  border-radius: 0 10px 10px 0;
+  background: rgba(121,247,212,.07);
+  color: #e9e4f1;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.playlist-confirm-grid { align-items: start; }
+.playlist-confirm-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #514762;
+  border-radius: 18px;
+  background: #0d0b14;
+}
+.playlist-confirm-card.current-card { border-top: 4px solid #79f7d4; }
+.playlist-confirm-card.rewind-card { border-top: 4px solid #b58cff; }
+.playlist-confirm-card header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.playlist-confirm-card header div { display: flex; flex-direction: column; }
+.playlist-confirm-card header strong { color: #fff; font-size: 1.12rem; }
+.playlist-confirm-card header small { color: #bdb4c9; }
+.signal-dot { width: 12px; height: 12px; border-radius: 50%; background: #79f7d4; box-shadow: 0 0 18px rgba(121,247,212,.7); }
+.rewind-card .signal-dot { background: #b58cff; box-shadow: 0 0 18px rgba(181,140,255,.7); }
+.entry-total { color: #9af9df; font: 800 .74rem/1 "Courier New", monospace; }
+.playlist-entry-list { display: grid; gap: 9px; }
+.playlist-entry {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 42px;
+  align-items: center;
+  gap: 8px;
+}
+.entry-number { color: #8e849c; font: 800 .78rem/1 "Courier New", monospace; text-align: center; }
+.playlist-entry input {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px 13px;
+  border: 2px solid #40384d;
+  border-radius: 11px;
+  background: #191522;
+  color: #fff;
+  font: 600 1rem/1.35 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  opacity: 1;
+  -webkit-text-fill-color: #fff;
+}
+.playlist-entry input::placeholder { color: #776d84; -webkit-text-fill-color: #776d84; }
+.playlist-entry input:focus { border-color: #79f7d4; background: #211a2d; outline: 3px solid rgba(121,247,212,.12); }
+.remove-entry {
+  width: 42px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid #4d4054;
+  border-radius: 10px;
+  background: transparent;
+  color: #ffb3c5;
+  font-size: 1.45rem;
+}
+.remove-entry:hover { border-color: #ff9bb3; background: rgba(255,155,179,.1); }
+.add-entry { width: 100%; margin-top: 12px; padding: 11px; }
+
 .picker-intro { margin: -8px 0 22px; color: #d1c9dc; }
 .stack-grid { display: grid; gap: 16px; }
 .tag-builder {
@@ -1042,6 +1114,10 @@ label {
   .route-grid { grid-template-columns: 1fr; }
   .route-choice { min-height: 160px; }
   .upload-zone { min-height: 190px; }
+  .playlist-confirm-card { padding: 13px 10px; }
+  .playlist-entry { grid-template-columns: 28px minmax(0, 1fr) 40px; gap: 6px; }
+  .playlist-entry input { min-height: 54px; padding: 13px 11px; font-size: 16px; }
+  .remove-entry { width: 40px; min-height: 46px; }
   .tag-input-row { grid-template-columns: 1fr; }
   .tag-input-row button { width: 100%; }
   .action-row > * { width: 100%; }

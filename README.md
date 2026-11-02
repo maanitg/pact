@@ -7,9 +7,9 @@ requiring Spotify Web API approval.
 
 Participants choose one of two consistent routes:
 
-1. **Scan my Spotify:** upload On Repeat and Repeat Rewind screenshots, let the
-   browser run OCR locally, correct the extracted names, and add three forever
-   artists.
+1. **Scan my Spotify:** upload exactly two On Repeat and two Repeat Rewind
+   screenshots, let the browser run OCR locally, correct each extracted item in
+   a numbered mobile-friendly editor, and add three forever artists.
 2. **Build my taste stack:** choose exactly three forever artists, three current
    artists, and two wildcard artists without uploading anything.
 

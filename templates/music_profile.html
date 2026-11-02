@@ -60,8 +60,8 @@
                     </article>
                     <article class="instruction-card">
                         <div class="phone-visual stats-visual"><div class="phone-notch"></div><b>On Repeat</b><ol><li>Song — Artist</li><li>Song — Artist</li><li>Song — Artist</li></ol></div>
-                        <strong>Screenshot 10 tracks</strong>
-                        <span>Use one or two screenshots. Keep song and artist names visible.</span>
+                        <strong>Take exactly 2 screenshots</strong>
+                        <span>Capture the first 10–15 tracks. Keep song and artist names visible.</span>
                     </article>
                     <article class="instruction-card">
                         <div class="phone-visual rewind-visual"><div class="phone-notch"></div><b>Repeat Rewind</b><ol><li>Older favorite</li><li>Older favorite</li><li>Older favorite</li></ol></div>
@@ -79,12 +79,12 @@
                 <div class="upload-grid">
                     <label class="upload-zone" id="current-zone">
                         <input id="current-images" type="file" multiple accept="image/png,image/jpeg,image/webp">
-                        <span class="upload-icon">＋</span><strong>On Repeat</strong><small>Choose up to 3 screenshots</small>
+                        <span class="upload-icon">＋</span><strong>On Repeat</strong><small>Choose exactly 2 screenshots</small>
                         <div class="file-summary" id="current-summary"></div>
                     </label>
                     <label class="upload-zone" id="rewind-zone">
                         <input id="rewind-images" type="file" multiple accept="image/png,image/jpeg,image/webp">
-                        <span class="upload-icon">＋</span><strong>Repeat Rewind</strong><small>Choose up to 3 screenshots</small>
+                        <span class="upload-icon">＋</span><strong>Repeat Rewind</strong><small>Choose exactly 2 screenshots</small>
                         <div class="file-summary" id="rewind-summary"></div>
                     </label>
                 </div>
@@ -100,9 +100,18 @@
                     <span class="step-number">4</span>
                     <div><p class="eyebrow">QUICK SOUND CHECK</p><h2 id="confirm-title">Make sure we got you right</h2></div>
                 </div>
-                <div class="confirm-grid">
-                    <label>Current rotation <small>one “song — artist” per line; keep at least 3</small><textarea id="current-items" rows="9" placeholder="Pink + White — Frank Ocean&#10;Saturn — SZA"></textarea></label>
-                    <label>Repeat Rewind <small>one “song — artist” per line; keep at least 3</small><textarea id="rewind-items" rows="9" placeholder="Someday — The Strokes&#10;Supercut — Lorde"></textarea></label>
+                <p class="confirm-help">Each visible line becomes one editable row. Fix OCR mistakes and combine split song/artist lines as <strong>Song — Artist</strong>.</p>
+                <div class="confirm-grid playlist-confirm-grid">
+                    <article class="playlist-confirm-card current-card">
+                        <header><span class="signal-dot"></span><div><strong>On Repeat</strong><small>Current rotation</small></div><span class="entry-total" id="current-total">0 items</span></header>
+                        <div class="playlist-entry-list" id="current-editor" aria-label="On Repeat extracted items"></div>
+                        <button type="button" class="add-entry secondary-button" data-list="current">＋ Add missing item</button>
+                    </article>
+                    <article class="playlist-confirm-card rewind-card">
+                        <header><span class="signal-dot"></span><div><strong>Repeat Rewind</strong><small>Enduring favorites</small></div><span class="entry-total" id="rewind-total">0 items</span></header>
+                        <div class="playlist-entry-list" id="rewind-editor" aria-label="Repeat Rewind extracted items"></div>
+                        <button type="button" class="add-entry secondary-button" data-list="rewind">＋ Add missing item</button>
+                    </article>
                 </div>
                 <div class="tag-builder" data-tag-key="scanForever" data-limit="3">
                     <div class="tag-copy"><strong>Add 3 forever artists</strong><small>These anchors correct for any weird playlist phase.</small></div>

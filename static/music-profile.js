@@ -3,13 +3,12 @@
     if (!currentInput) return;
 
     const rewindInput = document.querySelector('#rewind-images');
-    const currentText = document.querySelector('#current-items');
-    const rewindText = document.querySelector('#rewind-items');
     const confirmSection = document.querySelector('#scan-confirm-section');
     const scanButton = document.querySelector('#scan-button');
     const status = document.querySelector('#scan-status');
     const formError = document.querySelector('#form-error');
     const tagState = { scanForever: [], forever: [], current: [], wildcard: [] };
+    const playlistState = { current: [], rewind: [] };
     let activeRoute = 'scan';
 
     const ignoredLines = new Set([
@@ -19,11 +18,11 @@
     ]);
 
     function showFiles(input, summarySelector, zoneSelector) {
-        const files = Array.from(input.files).slice(0, 3);
-        document.querySelector(summarySelector).textContent = files.length
-            ? `${files.length} screenshot${files.length === 1 ? '' : 's'} ready`
-            : '';
-        document.querySelector(zoneSelector).classList.toggle('has-files', files.length > 0);
+        const count = input.files.length;
+        document.querySelector(summarySelector).textContent = count === 2
+            ? '2 of 2 screenshots ready'
+            : `${count} of 2 selected`;
+        document.querySelector(zoneSelector).classList.toggle('has-files', count === 2);
     }
 
     currentInput.addEventListener('change', () => showFiles(currentInput, '#current-summary', '#current-zone'));
@@ -38,6 +37,67 @@
             return true;
         }).slice(0, 20);
     }
+
+    function confirmedItems(key) {
+        return uniqueLines(playlistState[key].map(item => item.trim()).filter(Boolean));
+    }
+
+    function updatePlaylistTotal(key) {
+        const count = confirmedItems(key).length;
+        document.querySelector(`#${key}-total`).textContent = `${count} item${count === 1 ? '' : 's'}`;
+    }
+
+    function renderPlaylistEditor(key) {
+        const editor = document.querySelector(`#${key}-editor`);
+        editor.replaceChildren();
+        playlistState[key].forEach((value, index) => {
+            const row = document.createElement('div');
+            row.className = 'playlist-entry';
+
+            const number = document.createElement('span');
+            number.className = 'entry-number';
+            number.textContent = String(index + 1).padStart(2, '0');
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = value;
+            input.placeholder = 'Song — Artist';
+            input.setAttribute('aria-label', `${key === 'current' ? 'On Repeat' : 'Repeat Rewind'} item ${index + 1}`);
+            input.addEventListener('input', () => {
+                playlistState[key][index] = input.value;
+                updatePlaylistTotal(key);
+            });
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'remove-entry';
+            remove.textContent = '×';
+            remove.setAttribute('aria-label', `Remove item ${index + 1}`);
+            remove.addEventListener('click', () => {
+                playlistState[key].splice(index, 1);
+                renderPlaylistEditor(key);
+            });
+
+            row.append(number, input, remove);
+            editor.appendChild(row);
+        });
+        updatePlaylistTotal(key);
+    }
+
+    function setPlaylistItems(key, items) {
+        playlistState[key] = uniqueLines(items);
+        renderPlaylistEditor(key);
+    }
+
+    document.querySelectorAll('.add-entry').forEach(button => {
+        button.addEventListener('click', () => {
+            const key = button.dataset.list;
+            if (playlistState[key].length >= 20) return;
+            playlistState[key].push('');
+            renderPlaylistEditor(key);
+            document.querySelector(`#${key}-editor .playlist-entry:last-child input`)?.focus();
+        });
+    });
 
     function cleanOcrLines(rawText) {
         return uniqueLines(rawText
@@ -65,10 +125,10 @@
 
     scanButton.addEventListener('click', async () => {
         formError.textContent = '';
-        const currentFiles = Array.from(currentInput.files).slice(0, 3);
-        const rewindFiles = Array.from(rewindInput.files).slice(0, 3);
-        if (!currentFiles.length || !rewindFiles.length) {
-            status.textContent = 'Choose at least one screenshot from each playlist.';
+        const currentFiles = Array.from(currentInput.files);
+        const rewindFiles = Array.from(rewindInput.files);
+        if (currentFiles.length !== 2 || rewindFiles.length !== 2) {
+            status.textContent = 'Choose exactly 2 screenshots from each playlist.';
             return;
         }
         if (!window.Tesseract) {
@@ -87,8 +147,8 @@
                     }
                 }
             });
-            currentText.value = (await recognizeFiles(worker, currentFiles, 'On Repeat')).join('\n');
-            rewindText.value = (await recognizeFiles(worker, rewindFiles, 'Repeat Rewind')).join('\n');
+            setPlaylistItems('current', await recognizeFiles(worker, currentFiles, 'On Repeat'));
+            setPlaylistItems('rewind', await recognizeFiles(worker, rewindFiles, 'Repeat Rewind'));
             status.textContent = 'Done. Check the names below—screenshots can be messy.';
         } catch (error) {
             console.error(error);
@@ -101,8 +161,16 @@
     });
 
     document.querySelector('#manual-scan-button').addEventListener('click', () => {
+        if (!playlistState.current.length) {
+            playlistState.current = ['', '', ''];
+            renderPlaylistEditor('current');
+        }
+        if (!playlistState.rewind.length) {
+            playlistState.rewind = ['', '', ''];
+            renderPlaylistEditor('rewind');
+        }
         revealConfirmation();
-        currentText.focus();
+        document.querySelector('#current-editor input')?.focus();
     });
 
     document.querySelectorAll('.route-choice').forEach(button => {
@@ -170,10 +238,6 @@
         renderTags(builder);
     });
 
-    function linesFrom(value) {
-        return uniqueLines(value.split(/\r?\n/).map(item => item.trim()).filter(Boolean));
-    }
-
     function validatePayload(payload) {
         if (payload.captureMode === 'spotify_scan') {
             if (payload.currentItems.length < 3 || payload.rewindItems.length < 3) {
@@ -192,8 +256,8 @@
         formError.textContent = '';
         const payload = {
             captureMode: activeRoute === 'scan' ? 'spotify_scan' : 'artist_picker',
-            currentItems: linesFrom(currentText.value),
-            rewindItems: linesFrom(rewindText.value),
+            currentItems: confirmedItems('current'),
+            rewindItems: confirmedItems('rewind'),
             foreverArtists: activeRoute === 'scan' ? tagState.scanForever : tagState.forever,
             currentArtists: activeRoute === 'picker' ? tagState.current : [],
             wildcardArtists: activeRoute === 'picker' ? tagState.wildcard : [],
@@ -233,8 +297,8 @@
         const mode = profile.capture_mode || (profile.source === 'artist_picker' ? 'artist_picker' : 'spotify_scan');
         activeRoute = mode;
         document.querySelector(`.route-choice[data-route="${mode === 'artist_picker' ? 'picker' : 'scan'}"]`).click();
-        currentText.value = (profile.current_items || profile.top_tracks || []).join('\n');
-        rewindText.value = (profile.rewind_items || []).join('\n');
+        setPlaylistItems('current', profile.current_items || profile.top_tracks || []);
+        setPlaylistItems('rewind', profile.rewind_items || []);
         tagState.scanForever = [...(profile.forever_artists || profile.core_artists || [])].slice(0, 3);
         tagState.forever = [...(profile.forever_artists || profile.core_artists || [])].slice(0, 3);
         tagState.current = [...(profile.current_artists || [])].slice(0, 3);
@@ -242,7 +306,7 @@
         document.querySelectorAll('.tag-builder').forEach(renderTags);
         const taste = document.querySelector(`input[name="taste-mode"][value="${profile.taste_mode || 'balanced'}"]`);
         if (taste) taste.checked = true;
-        if (mode === 'spotify_scan' && (currentText.value || rewindText.value)) confirmSection.classList.add('is-visible');
+        if (mode === 'spotify_scan' && (playlistState.current.length || playlistState.rewind.length)) confirmSection.classList.add('is-visible');
     }
 
     hydrateExistingProfile();

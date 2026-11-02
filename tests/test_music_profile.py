@@ -82,6 +82,8 @@ class MusicProfileRouteTests(unittest.TestCase):
         self.assertIn(b"Scan my Spotify", response.data)
         self.assertIn(b"Build my taste stack", response.data)
         self.assertIn(b"Repeat Rewind", response.data)
+        self.assertIn(b"Choose exactly 2 screenshots", response.data)
+        self.assertIn(b"current-editor", response.data)
 
     def test_confirmed_timeline_is_saved_and_receipt_is_rendered(self):
         response = self.client.post("/api/music-profile", json=SCAN_PAYLOAD)
