@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.cache
+.spotipyoauthcache*
+__pycache__/
+*.py[cod]
+.pytest_cache/
+flask_session/
+uploads/
+instance/
+.venv/
+venv/

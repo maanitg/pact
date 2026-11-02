@@ -3,6 +3,7 @@ from pymongo.server_api import ServerApi
 from scipy.spatial.distance import cosine
 import numpy as np
 from collections import defaultdict
+import os
 from sklearn.preprocessing import normalize
 
 
@@ -11,7 +12,9 @@ from sklearn.preprocessing import normalize
 # Connect to MongoDB
 
 # database set up
-uri = "mongodb+srv://maanit:We'reall50%25banana@tangle.h9qzr.mongodb.net/?retryWrites=true&w=majority&appName=tangle"
+uri = os.environ.get("MONGO_URI")
+if not uri:
+    raise RuntimeError("Set MONGO_URI before running the legacy matching script.")
 # Create a new client and connect to the server
 client = MongoClient(uri, server_api=ServerApi('1'))
 # Send a ping to confirm a successful connection

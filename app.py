@@ -1,102 +1,107 @@
+import hmac
+import os
 import uuid
-from flask import Flask, request, url_for, session, redirect, render_template, jsonify, g
-from flask_session import Session
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
+from datetime import datetime
+from time import gmtime
+
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
-import os
-import time 
-import json
-from flask_caching import Cache
-from datetime import datetime, timedelta
-from time import gmtime, strftime
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Email, ValidationError
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-from pymongo.errors import DuplicateKeyError
+from werkzeug.security import check_password_hash, generate_password_hash
 
+from music_profile import build_music_profile
 
-client = MongoClient(
-    "mongodb+srv://maanit:We'reall50%25banana@tangle.h9qzr.mongodb.net/?retryWrites=true&w=majority&appName=tangle",
-    server_api=ServerApi('1'),
-    maxPoolSize=50,
-    wtimeoutMS=2500,
-    connectTimeoutMS=2000,
-    serverSelectionTimeoutMS=3000
-)
-
-
-# Send a ping to confirm a successful connection
-try:
-    client.admin.command('ping')
-    print("Pinged your deployment. You successfully connected to MongoDB!")
-except Exception as e:
-    print(e)
-
-db = client.tangle
-coll = db.users
-
-CLIENT_ID = "ff513e5fd4dd4e7483ee15b1f58215aa"
-CLIENT_SECRET = "0b159e97f65d4ecc86ffcc6ceb82afd7"
-TOKEN_INFO = "token_info"
-SECRET_KEY = "asdf"
-
-MEDIUM_TERM = "medium_term"
-SHORT_TERM = "short_term"
-LONG_TERM = "long_term"
 
 app = Flask(__name__)
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = 'fotoxre@gmail.com'
-app.config['MAIL_PASSWORD'] = 'ovuagvufsbfqwdng'
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
-app.secret_key = SECRET_KEY
-#cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
-
-MATCHED = False
+app.config.update(
+    MAIL_SERVER=os.environ.get("MAIL_SERVER", "smtp.gmail.com"),
+    MAIL_PORT=int(os.environ.get("MAIL_PORT", "587")),
+    MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False,
+    MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
+    SESSION_PERMANENT=False,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true",
+)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
 
 mail = Mail(app)
-serializer = (URLSafeTimedSerializer(app.config['SECRET_KEY']))
+serializer = URLSafeTimedSerializer(app.secret_key)
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+
+def create_collection():
+    """Connect only when a Mongo URI is configured."""
+    mongo_uri = os.environ.get("MONGO_URI")
+    if not mongo_uri:
+        return None
+    client = MongoClient(
+        mongo_uri,
+        server_api=ServerApi("1"),
+        maxPoolSize=50,
+        wtimeoutMS=2500,
+        connectTimeoutMS=2000,
+        serverSelectionTimeoutMS=3000,
+    )
+    return client[os.environ.get("MONGO_DB", "tangle")][
+        os.environ.get("MONGO_COLLECTION", "users")
+    ]
+
+
+coll = create_collection()
+
+
+def database_required():
+    if coll is None:
+        return jsonify(
+            success=False,
+            message="Account services are not configured in this environment.",
+        ), 503
+    return None
+
+
+def get_current_music_profile():
+    profile = session.get("music_profile")
+    email = session.get("user")
+    if email and coll is not None:
+        user = coll.find_one({"email": email}, {"_music_profile": 1, "_id": 0})
+        if user and user.get("_music_profile"):
+            profile = user["_music_profile"]
+    return profile
+
+
+def is_password_hash(value):
+    return isinstance(value, str) and value.startswith(("scrypt:", "pbkdf2:"))
 
 def get_password_by_email(email):
-    # Find the document with the given email
-    document = coll.find_one({"email": email})
-    
-    if document:
-        # If the document exists, return the password
-        return document.get("_password")
-    else:
-        # If no document is found with the given email
+    if coll is None:
         return None
+    document = coll.find_one({"email": email})
+    return document.get("_password") if document else None
 
 
 
 @app.route("/")
 def index():
-    session['user'] = None
     return render_template('index.html', title='Welcome')
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['POST'])
 def register():
-    email = request.form.get('registerEmail')
+    unavailable = database_required()
+    if unavailable:
+        return unavailable
+    email = (request.form.get('registerEmail') or '').strip().lower()
     if not email.endswith('@stanford.edu'):
         return jsonify({'success': False, 'message': 'Please enter a Stanford email address.'})
     token = serializer.dumps(email, salt='email-confirm')
     if not coll.find_one({'email': email}):
         confirm_url = url_for('confirm_email', token=token, _external=True)
-        msg = Message('Confirm Your Email', sender='your_email@gmail.com', recipients=[email])
+        if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
+            return jsonify({'success': False, 'message': 'Email delivery is not configured.'}), 503
+        msg = Message('Confirm Your Email', sender=app.config['MAIL_USERNAME'], recipients=[email])
         msg.body = f'Click the following link to confirm your email: {confirm_url}'
         mail.send(msg)
         print("sending reg!")
@@ -104,9 +109,12 @@ def register():
     else:
         return jsonify({'success': False, 'message': 'Account already exists. Please log in.'})
 
-@app.route('/forgot', methods=['GET', 'POST'])
+@app.route('/forgot', methods=['POST'])
 def forgot_password():
-    email = request.form.get('forgotEmail')
+    unavailable = database_required()
+    if unavailable:
+        return unavailable
+    email = (request.form.get('forgotEmail') or '').strip().lower()
     if not email.endswith('@stanford.edu'):
         return jsonify({'success': False, 'message': 'Please enter your Stanford email address.'})
     if not coll.find_one({'email': email}):
@@ -114,7 +122,9 @@ def forgot_password():
     else:
         token = serializer.dumps(email, salt='email-confirm')
         confirm_url = url_for('confirm_email', token=token, _external=True)
-        msg = Message('Confirm Your Email', sender='your_email@gmail.com', recipients=[email])
+        if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
+            return jsonify({'success': False, 'message': 'Email delivery is not configured.'}), 503
+        msg = Message('Reset Your Password', sender=app.config['MAIL_USERNAME'], recipients=[email])
         msg.body = f'Click the following link to reset your password: {confirm_url}'
         mail.send(msg)
         print("sending!")
@@ -122,10 +132,13 @@ def forgot_password():
 
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
+    unavailable = database_required()
+    if unavailable:
+        return unavailable
     try:
         email = serializer.loads(token, salt='email-confirm', max_age=3600)
-    except:
-        return 'The confirmation link is invalid or has expired.'
+    except Exception:
+        return 'The confirmation link is invalid or has expired.', 400
     
 
     coll.update_one(
@@ -141,12 +154,16 @@ def confirm_email(token):
 
 @app.route('/set_password/', methods=['POST'])
 def set_password():
-
-    email = request.form.get('setEmail') 
-    password = request.form.get('password')
-    if coll.find_one({'email': email}):
+    unavailable = database_required()
+    if unavailable:
+        return unavailable
+    email = (request.form.get('setEmail') or '').strip().lower()
+    password = request.form.get('password') or ''
+    if len(password) < 10:
+        return jsonify({'success': False, 'message': 'Use at least 10 characters.'}), 400
+    if coll.find_one({'email': email, 'confirmed': True}):
         coll.update_one({ "email": email },
-        { "$set": { "_password": password }  }
+        { "$set": { "_password": generate_password_hash(password) }  }
         )
         
         session['user'] = email
@@ -163,16 +180,28 @@ def set_password():
     
 @app.route('/login', methods=['POST'])
 def login():
-
-    email = request.form.get('email')
+    unavailable = database_required()
+    if unavailable:
+        return unavailable
+    email = (request.form.get('email') or '').strip().lower()
     if not email.endswith('@stanford.edu'):
         return jsonify({'success': False, 'message': 'Please enter a Stanford email address.'})
     if not coll.find_one({'email': email}):
         return jsonify({'success': False, 'message': 'Account does not exist. Please register.'})
-    password = request.form.get('password')
+    password = request.form.get('password') or ''
     p = get_password_by_email(email)
 
-    if password == p:
+    valid_password = (
+        check_password_hash(p, password)
+        if is_password_hash(p)
+        else hmac.compare_digest(p or '', password)
+    )
+    if valid_password:
+        if not is_password_hash(p):
+            coll.update_one(
+                {'email': email},
+                {'$set': {'_password': generate_password_hash(password)}}
+            )
         session.clear()
         session['user'] = email
         session['stored'] = False
@@ -188,24 +217,32 @@ def login():
 
 @app.route("/form")
 def form():
-    
-    if not coll.find_one({'email': session['user'], '_profile': 1}):
+    email = session.get('user')
+    if not email:
+        return redirect(url_for('index'))
+    if coll is None:
+        return redirect(url_for('music_profile'))
+    if not coll.find_one({'email': email, '_profile': 1}):
         return render_template('form.html')
     else:
-        return redirect(url_for("loginSpotify", _external=True))
+        return redirect(url_for("music_profile"))
 
 
 @app.route('/submit-form', methods=['POST'])
 #@cache.cached(timeout=50)
 def submit_form():
-
+    email = session.get('user')
+    if not email:
+        return jsonify({"error": "Please log in before submitting the form."}), 401
+    if coll is None:
+        return jsonify({"error": "Account services are not configured."}), 503
     try:
         # Get JSON data from request
         data = request.get_json()  # Since we're sending JSON from the frontend
         
         # Process and upload data to MongoDB
         coll.update_one(
-            {"email": session['user']},
+            {"email": email},
             {"$set": {
                 "_firstname": data["firstName"],
                 "_lastname": data["lastName"],
@@ -214,177 +251,84 @@ def submit_form():
                 "_friendpartner": data["lookingFor"],  # This will be an array like ["Friend", "Partner"]
                 "_partner": data["attractedTo"],       # This will be an array like ["Male", "Female"]
                 "_redflag": data["spotifyRedFlag"],
+                "_spotify_reflection": data.get("spotifyReflection"),
+                "_music_openness": data.get("musicOpenness"),
                 "_profile": 1
             }},
             upsert=True
         )
 
-        return jsonify({"redirectUrl": url_for('loginSpotify')})
+        return jsonify({"redirectUrl": url_for('music_profile')})
     
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
    
 
-def create_spotify_oauth(session_id):
-    return SpotifyOAuth(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
-        redirect_uri=url_for("redirectPage",_external=True, _scheme='https'),
-        scope="user-top-read user-library-read",
-        cache_path=f'.spotipyoauthcache_{session_id}'
-    )
-
-# Request auth to access data
 @app.route("/loginSpotify")
 def loginSpotify():
-
-    if not coll.find_one({'email': session['user'], '_stored': 1}):
-        print("Accessing spotify...")
-        session['sp_oauth'] = create_spotify_oauth(session['session_id'])
-        print(session['sp_oauth'])
-        auth_url = session['sp_oauth'].get_authorize_url()
-        print(auth_url)
-        return redirect(auth_url) # prompt user to login to Spotify
-    else:
-        print("redirecting to receipts, because stored is true")
-        return redirect(url_for("receipts", _external=True))
+    return redirect(url_for("music_profile"), code=301)
 
 
-
-def get_token(code):
-    token_info = session['sp_oauth'].get_access_token(code)
-    if not token_info:
-        return redirect(url_for("loginSpotify"))
-    else:
-        now = int(time.time())
-        if token_info['expires_at'] - now < 60:
-            token_info = session['sp_oauth'].refresh_access_token(token_info['refresh_token'])
-    return token_info
-
-# fetch and store data from Spotify
 @app.route("/redirectPage")
 def redirectPage():
-    
-    # request access and refresh tokens
-    code = request.args.get('code') # returns token
-    session[TOKEN_INFO] = get_token(code)
-    
-    # retrieve data from API using access token
-    coll.update_one(
-            {"email": session['user']},
-            {"$set": {
-                "spotify_access_token": session[TOKEN_INFO]['access_token'],
-                "spotify_refresh_token": session[TOKEN_INFO]['refresh_token'],
-                "token_expiry": session[TOKEN_INFO]['expires_at']
-            }},
-            upsert=True
+    return redirect(url_for("music_profile"), code=301)
+@app.route("/music-profile")
+def music_profile():
+    return render_template(
+        "music_profile.html",
+        title="Build your music profile",
+        existing_profile=get_current_music_profile(),
+    )
+
+
+@app.route("/api/music-profile", methods=["POST"])
+def save_music_profile():
+    try:
+        profile = build_music_profile(request.get_json(silent=True) or {})
+    except ValueError as error:
+        return jsonify(success=False, message=str(error)), 400
+
+    # Screenshot pixels are processed in the browser. Only confirmed text is saved.
+    session["music_profile"] = profile
+    session.modified = True
+    email = session.get("user")
+    if email and coll is not None:
+        coll.update_one(
+            {"email": email},
+            {
+                "$set": {
+                    "_music_profile": profile,
+                    "_short_tracks": profile["current_items"],
+                    "_long_tracks": profile["rewind_items"],
+                    "_long_art": profile["forever_artists"],
+                    "_med_art": profile["top_artists"],
+                    "_stored": 1,
+                },
+                "$unset": {
+                    "spotify_access_token": "",
+                    "spotify_refresh_token": "",
+                    "token_expiry": "",
+                },
+            },
+            upsert=True,
         )
-   # if data not already stored:
-    sp = spotipy.Spotify(oauth_manager=session['sp_oauth'], auth=session[TOKEN_INFO]['access_token'])
-    print(sp.current_user()['display_name'])
-    short_tracks_temp = sp.current_user_top_tracks(
-        limit=10,
-        time_range=SHORT_TERM,
-    )
-    medium_tracks_temp = sp.current_user_top_tracks(
-        limit=10,
-        time_range=MEDIUM_TERM,
-    )
-    long_tracks_temp = sp.current_user_top_tracks(
-        limit=10,
-        time_range=LONG_TERM,
-    )
-    medium_art_temp = sp.current_user_top_artists(
-        limit=20,
-        time_range=MEDIUM_TERM,
-    )
-    long_art_temp = sp.current_user_top_artists(
-        limit=20,
-        time_range=LONG_TERM,
-    )
-    short_tracks = []
-    for track in short_tracks_temp['items']:
-        short_tracks.append(track['name'])
-    medium_tracks = []
-    for track in medium_tracks_temp['items']:
-        medium_tracks.append(track['name'])
-    long_tracks = []
-    for track in long_tracks_temp['items']:
-        long_tracks.append(track['name'])
-    medium_art = []
-    for artist in medium_art_temp['items']:
-        medium_art.append(artist['name'])
-    long_art = []
-    for artist in long_art_temp['items']:
-        long_art.append(artist['name'])
-
-    medium_alb = []
-    for track in medium_tracks_temp['items']:
-        medium_alb.append(track['album'])
-    long_alb = []
-    for track in long_tracks_temp['items']:
-        long_alb.append(track['album'])
-
-    medium_gen = []
-    for artist in medium_art_temp['items']:
-        medium_gen.extend(artist['genres'])
-    medium_gen = sorted(list(set(medium_gen)))
-    long_gen = []
-    for artist in long_art_temp['items']:
-        long_gen.extend(artist['genres'])
-    long_gen = sorted(list(set(long_gen)))
-    
-    coll.update_one(
-        { "email": session['user'] },
-        { "$set": { "_stored": 1, 
-                   "_short_tracks_obj": short_tracks_temp,
-                    "_med_tracks_obj": medium_tracks_temp,
-                    "_long_tracks_obj": long_tracks_temp,
-                    "_short_tracks": short_tracks, 
-                    "_med_tracks": medium_tracks,
-                    "_long_tracks": long_tracks,
-                    "_med_art": medium_art, 
-                    "_long_art": long_art, 
-                    "_med_gen": medium_gen, 
-                    "_long_gen": long_gen, 
-                    "_med_alb": medium_alb, 
-                    "_long_alb": long_alb 
-        }},
-        upsert=True 
-    )
-
-
-    return redirect(url_for("receipts", _external=True))
-    
+    return jsonify(success=True, redirectUrl=url_for("receipts"))
 
 
 @app.route("/receipts")
 def receipts():
-    if ((session['user'] is None) or (coll.find_one({'email': session['user'], '_stored': 1}) is None)):
-        return render_template('receiptNoUser.html');
-    else:
-
-        user_data = coll.find_one({"email": session['user']})
-        if not user_data or 'spotify_access_token' not in user_data:
-            return redirect(url_for("loginSpotify"))
-        
-        current_user_name = session['user']
-
-        short_term = coll.find_one({"email": session['user']}, {"_short_tracks_obj": 1, "_id": 0})
-        medium_term = coll.find_one({"email": session['user']}, {"_med_tracks_obj": 1, "_id": 0})
-        long_term = coll.find_one({"email": session['user']}, {"_long_tracks_obj": 1, "_id": 0})
-
-        if os.path.exists(".cache"): 
-            os.remove(".cache")
-
-        return render_template('receipt.html', 
-                               user_display_name=current_user_name, 
-                               short_term=short_term['_short_tracks_obj'], 
-                               medium_term=medium_term['_med_tracks_obj'], 
-                               long_term=long_term['_long_tracks_obj'], 
-                               title="You've connected your Spotify. Matches are coming.", 
-                               currentTime=gmtime())
+    profile = get_current_music_profile()
+    if not profile:
+        return redirect(url_for("music_profile"))
+    display_name = (session.get("user") or "GUEST").split("@")[0]
+    return render_template(
+        "music_receipt.html",
+        user_display_name=display_name,
+        profile=profile,
+        title="Your music fingerprint is ready.",
+        currentTime=gmtime(),
+    )
     
 
 @app.route("/about")
@@ -393,10 +337,7 @@ def about():
 
 @app.route("/match")
 def match():
-    if not globals()["MATCHED"]:
-        return render_template('match.html')
-    else:
-        return render_template('match.html')
+    return render_template('match.html')
 
 
 
@@ -423,3 +364,8 @@ def _jinja2_filter_miliseconds(time, fmt=None):
     if seconds < 10: 
         return str(minutes) + ":0" + str(seconds)
     return str(minutes) + ":" + str(seconds ) 
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)

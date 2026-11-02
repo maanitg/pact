@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script defer src="{{ url_for('static', filename='music-profile.js') }}"></script>
+</head>
+<body class="music-profile-page">
+    <nav class="top-nav">
+        <a href="/" class="nav-button">Home</a>
+        <a href="/about" class="nav-button">About</a>
+        <a href="/receipts" class="nav-button">Receipt</a>
+        <a href="/match" class="nav-button">Match</a>
+    </nav>
+    <div class="image-background"></div>
+
+    <main class="profile-shell">
+        <header class="profile-hero">
+            <p class="eyebrow">BUILD YOUR MUSIC TIMELINE</p>
+            <h1>FIND YOUR WAVELENGTH</h1>
+            <p class="hero-copy">Scan the Spotify playlists that know you, or build an eight-artist taste stack in under a minute.</p>
+            <div class="privacy-pill">Screenshots stay on this device. Only the names you confirm are saved.</div>
+        </header>
+
+        <section class="profile-card route-card" aria-labelledby="route-title">
+            <div class="section-heading">
+                <span class="step-number">1</span>
+                <div><p class="eyebrow">PICK YOUR ROUTE</p><h2 id="route-title">How should we read your taste?</h2></div>
+            </div>
+            <div class="route-grid" role="group" aria-label="Music profile method">
+                <button class="route-choice is-active" type="button" data-route="scan" aria-pressed="true">
+                    <span class="route-badge">MOST MAGICAL</span>
+                    <strong>Scan my Spotify</strong>
+                    <small>On Repeat + Repeat Rewind screenshots</small>
+                    <span>About 90 seconds</span>
+                </button>
+                <button class="route-choice" type="button" data-route="picker" aria-pressed="false">
+                    <span class="route-badge">MOST RELIABLE</span>
+                    <strong>Build my taste stack</strong>
+                    <small>Choose 3 forever, 3 current, and 2 wildcard artists</small>
+                    <span>About 45 seconds</span>
+                </button>
+            </div>
+        </section>
+
+        <div id="scan-flow">
+            <section class="profile-card" aria-labelledby="directions-title">
+                <div class="section-heading">
+                    <span class="step-number">2</span>
+                    <div><p class="eyebrow">IN SPOTIFY MOBILE</p><h2 id="directions-title">Capture your music timeline</h2></div>
+                </div>
+                <div class="instruction-grid">
+                    <article class="instruction-card">
+                        <div class="phone-visual"><div class="phone-notch"></div><div class="spotify-row"><span class="avatar-dot">⌕</span><span>On Repeat</span></div><div class="fake-row"></div><div class="fake-row short"></div></div>
+                        <strong>Search “On Repeat”</strong>
+                        <span>This is your current rotation. Open the playlist made for you.</span>
+                    </article>
+                    <article class="instruction-card">
+                        <div class="phone-visual stats-visual"><div class="phone-notch"></div><b>On Repeat</b><ol><li>Song — Artist</li><li>Song — Artist</li><li>Song — Artist</li></ol></div>
+                        <strong>Take exactly 2 screenshots</strong>
+                        <span>Capture the first 10–15 tracks. Keep song and artist names visible.</span>
+                    </article>
+                    <article class="instruction-card">
+                        <div class="phone-visual rewind-visual"><div class="phone-notch"></div><b>Repeat Rewind</b><ol><li>Older favorite</li><li>Older favorite</li><li>Older favorite</li></ol></div>
+                        <strong>Repeat for “Repeat Rewind”</strong>
+                        <span>This catches the favorites that survived more than one recent phase.</span>
+                    </article>
+                </div>
+            </section>
+
+            <section class="profile-card" aria-labelledby="upload-title">
+                <div class="section-heading">
+                    <span class="step-number">3</span>
+                    <div><p class="eyebrow">BACK HERE</p><h2 id="upload-title">Drop in the screenshots</h2></div>
+                </div>
+                <div class="upload-grid">
+                    <label class="upload-zone" id="current-zone">
+                        <input id="current-images" type="file" multiple accept="image/png,image/jpeg,image/webp">
+                        <span class="upload-icon">＋</span><strong>On Repeat</strong><small>Choose exactly 2 screenshots</small>
+                        <div class="file-summary" id="current-summary"></div>
+                    </label>
+                    <label class="upload-zone" id="rewind-zone">
+                        <input id="rewind-images" type="file" multiple accept="image/png,image/jpeg,image/webp">
+                        <span class="upload-icon">＋</span><strong>Repeat Rewind</strong><small>Choose exactly 2 screenshots</small>
+                        <div class="file-summary" id="rewind-summary"></div>
+                    </label>
+                </div>
+                <div class="action-row">
+                    <button type="button" id="scan-button">Read my screenshots</button>
+                    <button type="button" id="manual-scan-button" class="secondary-button">Type the playlist instead</button>
+                </div>
+                <div id="scan-status" class="scan-status" role="status" aria-live="polite"></div>
+            </section>
+
+            <section class="profile-card confirm-card" id="scan-confirm-section" aria-labelledby="confirm-title">
+                <div class="section-heading">
+                    <span class="step-number">4</span>
+                    <div><p class="eyebrow">QUICK SOUND CHECK</p><h2 id="confirm-title">Make sure we got you right</h2></div>
+                </div>
+                <p class="confirm-help">Each visible line becomes one editable row. Fix OCR mistakes and combine split song/artist lines as <strong>Song — Artist</strong>.</p>
+                <div class="confirm-grid playlist-confirm-grid">
+                    <article class="playlist-confirm-card current-card">
+                        <header><span class="signal-dot"></span><div><strong>On Repeat</strong><small>Current rotation</small></div><span class="entry-total" id="current-total">0 items</span></header>
+                        <div class="playlist-entry-list" id="current-editor" aria-label="On Repeat extracted items"></div>
+                        <button type="button" class="add-entry secondary-button" data-list="current">＋ Add missing item</button>
+                    </article>
+                    <article class="playlist-confirm-card rewind-card">
+                        <header><span class="signal-dot"></span><div><strong>Repeat Rewind</strong><small>Enduring favorites</small></div><span class="entry-total" id="rewind-total">0 items</span></header>
+                        <div class="playlist-entry-list" id="rewind-editor" aria-label="Repeat Rewind extracted items"></div>
+                        <button type="button" class="add-entry secondary-button" data-list="rewind">＋ Add missing item</button>
+                    </article>
+                </div>
+                <div class="tag-builder" data-tag-key="scanForever" data-limit="3">
+                    <div class="tag-copy"><strong>Add 3 forever artists</strong><small>These anchors correct for any weird playlist phase.</small></div>
+                    <div class="tag-input-row"><input type="text" autocomplete="off" placeholder="Type an artist, then press Enter"><button type="button" class="tag-add secondary-button">Add</button></div>
+                    <div class="tag-list" aria-live="polite"></div><span class="tag-count">0 / 3</span>
+                </div>
+            </section>
+        </div>
+
+        <div id="picker-flow" hidden>
+            <section class="profile-card" aria-labelledby="picker-title">
+                <div class="section-heading">
+                    <span class="step-number">2</span>
+                    <div><p class="eyebrow">NO SCREENSHOTS NEEDED</p><h2 id="picker-title">Build your eight-artist stack</h2></div>
+                </div>
+                <p class="picker-intro">Type an artist and press Enter. Eight deliberate picks give every participant the same-sized profile.</p>
+                <div class="stack-grid">
+                    <div class="tag-builder" data-tag-key="forever" data-limit="3">
+                        <div class="tag-copy"><strong>3 forever artists</strong><small>The artists that feel like home.</small></div>
+                        <div class="tag-input-row"><input type="text" autocomplete="off" placeholder="e.g. Frank Ocean"><button type="button" class="tag-add secondary-button">Add</button></div>
+                        <div class="tag-list" aria-live="polite"></div><span class="tag-count">0 / 3</span>
+                    </div>
+                    <div class="tag-builder" data-tag-key="current" data-limit="3">
+                        <div class="tag-copy"><strong>3 current artists</strong><small>Who you reach for right now.</small></div>
+                        <div class="tag-input-row"><input type="text" autocomplete="off" placeholder="e.g. SZA"><button type="button" class="tag-add secondary-button">Add</button></div>
+                        <div class="tag-list" aria-live="polite"></div><span class="tag-count">0 / 3</span>
+                    </div>
+                    <div class="tag-builder" data-tag-key="wildcard" data-limit="2">
+                        <div class="tag-copy"><strong>2 wildcard artists</strong><small>You would love a match to appreciate them.</small></div>
+                        <div class="tag-input-row"><input type="text" autocomplete="off" placeholder="e.g. Björk"><button type="button" class="tag-add secondary-button">Add</button></div>
+                        <div class="tag-list" aria-live="polite"></div><span class="tag-count">0 / 2</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <section class="profile-card final-card" aria-labelledby="match-style-title">
+            <div class="section-heading">
+                <span class="step-number" id="final-step-number">5</span>
+                <div><p class="eyebrow">LAST NOTE</p><h2 id="match-style-title">Choose your match style</h2></div>
+            </div>
+            <fieldset class="taste-fieldset">
+                <legend>What kind of music match sounds best?</legend>
+                <label><input type="radio" name="taste-mode" value="similar"> Someone on my exact wavelength</label>
+                <label><input type="radio" name="taste-mode" value="balanced" checked> Familiar overlap with a few surprises</label>
+                <label><input type="radio" name="taste-mode" value="discovery"> Someone who opens a new musical world</label>
+            </fieldset>
+            <p class="form-error" id="form-error" role="alert"></p>
+            <button type="button" id="save-profile">Make my music receipt</button>
+        </section>
+    </main>
+
+    <script id="existing-profile" type="application/json">{{ existing_profile | tojson if existing_profile else 'null' }}</script>
+</body>
+</html>
