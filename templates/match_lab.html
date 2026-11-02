@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="music-profile-page match-lab-page">
+    <nav class="top-nav">
+        <a href="/" class="nav-button">Home</a>
+        <a href="/music-profile" class="nav-button">Music profile</a>
+        <a href="/match-lab" class="nav-button">Match Lab</a>
+        <a href="/about" class="nav-button">About</a>
+    </nav>
+    <div class="image-background"></div>
+
+    <main class="lab-shell">
+        <header class="profile-hero lab-hero">
+            <p class="eyebrow">SAFE SYNTHETIC SANDBOX</p>
+            <h1>MATCH LAB</h1>
+            <p class="hero-copy">Eight fictional people. Four expected pairs. No database writes, emails, or real participant data.</p>
+            <div class="privacy-pill">Change the noise level and see whether the expected matches survive.</div>
+        </header>
+
+        <section class="profile-card lab-controls">
+            <form action="/match-lab" method="get">
+                <label>Simulated missing/reordered profile data
+                    <select name="noise">
+                        {% for value in [0, 10, 20, 30, 40, 50] %}
+                            <option value="{{ value }}" {% if lab.noise_percent == value %}selected{% endif %}>{{ value }}% noise</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Questionnaire eligibility
+                    <select name="constraints">
+                        <option value="1" {% if lab.respect_constraints %}selected{% endif %}>Respect constraints</option>
+                        <option value="0" {% if not lab.respect_constraints %}selected{% endif %}>Ignore constraints</option>
+                    </select>
+                </label>
+                <button type="submit">Run the cohort</button>
+            </form>
+            <p>Noise deterministically removes and reorders signals, so repeated runs at the same level are comparable.</p>
+        </section>
+
+        <section class="lab-metrics" aria-label="Match run summary">
+            <article><span>EXPECTED PAIRS</span><strong>{{ lab.metrics.expected_recovered }}/{{ lab.metrics.expected_total }}</strong><small>recovered</small></article>
+            <article><span>AVERAGE SCORE</span><strong>{{ "%.0f" | format(lab.metrics.average_score * 100) }}%</strong><small>among selected pairs</small></article>
+            <article><span>ELIGIBLE EDGES</span><strong>{{ lab.metrics.eligible_edges }}</strong><small>candidate connections</small></article>
+            <article><span>NOISE TEST</span><strong>{{ lab.noise_percent }}%</strong><small>signals perturbed</small></article>
+        </section>
+
+        <section class="profile-card" aria-labelledby="pairs-title">
+            <div class="section-heading">
+                <span class="step-number">1</span>
+                <div><p class="eyebrow">MAXIMUM-WEIGHT RESULT</p><h2 id="pairs-title">Proposed cohort matching</h2></div>
+            </div>
+            <div class="lab-pair-grid">
+                {% for pair in lab.pairs %}
+                    <article class="lab-pair-card {% if pair.expected %}expected-pair{% else %}unexpected-pair{% endif %}">
+                        <header>
+                            <div><strong>{{ pair.left.name }}</strong><span>↔</span><strong>{{ pair.right.name }}</strong></div>
+                            <span class="result-badge">{% if pair.expected %}EXPECTED ✓{% else %}SURPRISE{% endif %}</span>
+                        </header>
+                        <div class="pair-score"><strong>{{ "%.0f" | format(pair.score * 100) }}%</strong><span>{{ pair.relationship }} compatibility</span></div>
+                        <div class="score-component"><span>Repeat Rewind</span><div><i style="width: {{ pair.breakdown.rewind * 100 }}%"></i></div><b>{{ "%.0f" | format(pair.breakdown.rewind * 100) }}%</b></div>
+                        <div class="score-component"><span>Current rotation</span><div><i style="width: {{ pair.breakdown.current * 100 }}%"></i></div><b>{{ "%.0f" | format(pair.breakdown.current * 100) }}%</b></div>
+                        <div class="score-component"><span>Artist identity</span><div><i style="width: {{ pair.breakdown.identity * 100 }}%"></i></div><b>{{ "%.0f" | format(pair.breakdown.identity * 100) }}%</b></div>
+                        <div class="shared-signals">
+                            {% if pair.breakdown.shared_rewind %}<p><span>REWIND</span>{{ pair.breakdown.shared_rewind | join(' • ') }}</p>{% endif %}
+                            {% if pair.breakdown.shared_current %}<p><span>CURRENT</span>{{ pair.breakdown.shared_current | join(' • ') }}</p>{% endif %}
+                            {% if pair.breakdown.shared_artists %}<p><span>ARTISTS</span>{{ pair.breakdown.shared_artists | join(' • ') }}</p>{% endif %}
+                        </div>
+                    </article>
+                {% else %}
+                    <p>No eligible pairs met the minimum music score.</p>
+                {% endfor %}
+            </div>
+            {% if lab.unmatched %}<p class="lab-warning">Unmatched: {{ lab.unmatched | map(attribute='name') | join(', ') }}</p>{% endif %}
+        </section>
+
+        <section class="profile-card" aria-labelledby="matrix-title">
+            <div class="section-heading">
+                <span class="step-number">2</span>
+                <div><p class="eyebrow">EVERY PAIR, NOT JUST THE WINNERS</p><h2 id="matrix-title">Compatibility matrix</h2></div>
+            </div>
+            <p class="matrix-key"><span class="eligible-key"></span> eligible <span class="blocked-key"></span> blocked by questionnaire</p>
+            <div class="matrix-scroll">
+                <table class="score-matrix">
+                    <thead><tr><th></th>{% for person in lab.people %}<th>{{ person.name }}</th>{% endfor %}</tr></thead>
+                    <tbody>
+                        {% for row in lab.matrix %}
+                            <tr><th>{{ lab.people[loop.index0].name }}</th>
+                            {% for cell in row %}
+                                {% if cell is none %}<td class="self-cell">—</td>
+                                {% elif cell.eligible %}<td class="eligible-cell">{{ "%.0f" | format(cell.score * 100) }}</td>
+                                {% else %}<td class="blocked-cell" title="Questionnaire-ineligible">×</td>{% endif %}
+                            {% endfor %}</tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="profile-card" aria-labelledby="cohort-title">
+            <div class="section-heading">
+                <span class="step-number">3</span>
+                <div><p class="eyebrow">INSPECT THE TEST FIXTURES</p><h2 id="cohort-title">Synthetic cohort</h2></div>
+            </div>
+            <div class="cohort-grid">
+                {% for person in lab.people %}
+                    <details class="cohort-person">
+                        <summary><span class="person-swatch {{ person.color }}"></span><strong>{{ person.name }}</strong><small>expected: {{ person.expected_match | title }}</small></summary>
+                        <p><b>Seeking:</b> {{ person.looking_for | join(', ') }} · <b>Gender:</b> {{ person.gender }}</p>
+                        <p><b>Forever:</b> {{ person.profile.forever_artists | join(' • ') or 'removed by noise' }}</p>
+                        <p><b>Current:</b> {{ person.profile.current_items | join(' • ') or 'removed by noise' }}</p>
+                        <p><b>Rewind:</b> {{ person.profile.rewind_items | join(' • ') or 'removed by noise' }}</p>
+                    </details>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="lab-note">
+            <strong>What this proves</strong>
+            <p>The scoring, mutual eligibility filter, and global one-to-one optimizer work together on controlled data. It does not yet prove that exact-string music overlap is nuanced enough for a real cohort.</p>
+        </section>
+    </main>
+</body>
+</html>

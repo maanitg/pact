@@ -14,15 +14,29 @@
     const ignoredLines = new Set([
         'spotify', 'on repeat', 'repeat rewind', 'made for you', 'made for',
         'playlist', 'download', 'share', 'see all', 'back', 'more', 'play',
-        'listening stats', 'top artists', 'top songs', 'top tracks'
+        'listening stats', 'top artists', 'top songs', 'top tracks',
+        'title', '# title', 'album', 'date added', 'duration', 'your library'
     ]);
 
-    function showFiles(input, summarySelector, zoneSelector) {
+    async function showFiles(input, summarySelector, zoneSelector) {
         const count = input.files.length;
-        document.querySelector(summarySelector).textContent = count === 2
-            ? '2 of 2 screenshots ready'
-            : `${count} of 2 selected`;
-        document.querySelector(zoneSelector).classList.toggle('has-files', count === 2);
+        const summary = document.querySelector(summarySelector);
+        const zone = document.querySelector(zoneSelector);
+        zone.classList.toggle('has-files', count === 2);
+        if (count !== 2) {
+            summary.textContent = `${count} of 2 selected`;
+            return;
+        }
+        try {
+            const layouts = await Promise.all(Array.from(input.files).map(async file => {
+                const image = await loadImage(file);
+                return window.SpotifyOcr.screenshotLayout(image.naturalWidth, image.naturalHeight);
+            }));
+            const layoutLabel = new Set(layouts).size === 1 ? layouts[0] : 'mixed mobile + desktop';
+            summary.textContent = `2 of 2 ready · ${layoutLabel} detected`;
+        } catch (_error) {
+            summary.textContent = '2 of 2 ready';
+        }
     }
 
     currentInput.addEventListener('change', () => showFiles(currentInput, '#current-summary', '#current-zone'));
@@ -63,8 +77,10 @@
             input.value = value;
             input.placeholder = 'Song — Artist';
             input.setAttribute('aria-label', `${key === 'current' ? 'On Repeat' : 'Repeat Rewind'} item ${index + 1}`);
+            row.classList.toggle('needs-review', Boolean(value) && !value.includes(' — '));
             input.addEventListener('input', () => {
                 playlistState[key][index] = input.value;
+                row.classList.toggle('needs-review', Boolean(input.value) && !input.value.includes(' — '));
                 updatePlaylistTotal(key);
             });
 
@@ -108,14 +124,75 @@
             .filter(line => !ignoredLines.has(line.toLowerCase())));
     }
 
-    async function recognizeFiles(worker, files, label) {
-        const lines = [];
-        for (let index = 0; index < files.length; index += 1) {
-            status.textContent = `Reading ${label} screenshot ${index + 1} of ${files.length}…`;
-            const result = await worker.recognize(files[index]);
-            lines.push(...cleanOcrLines(result.data.text));
+    function loadImage(file) {
+        return new Promise((resolve, reject) => {
+            const image = new Image();
+            const url = URL.createObjectURL(file);
+            image.onload = () => {
+                URL.revokeObjectURL(url);
+                resolve(image);
+            };
+            image.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error('Could not open screenshot.'));
+            };
+            image.src = url;
+        });
+    }
+
+    async function prepareSpotifyCrop(file) {
+        const image = await loadImage(file);
+        const region = window.SpotifyOcr.spotifyCropRegion(image.naturalWidth, image.naturalHeight);
+        const scale = Math.max(1, Math.min(2, 2200 / region.width, 2400 / region.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(region.width * scale);
+        canvas.height = Math.round(region.height * scale);
+        canvas.dataset.layout = region.layout;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+        context.drawImage(
+            image,
+            region.left,
+            region.top,
+            region.width,
+            region.height,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        // Spotify uses white/gray text on a nearly black list. Grayscale plus a
+        // contrast lift removes most artwork/UI color noise while retaining both lines.
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        for (let offset = 0; offset < imageData.data.length; offset += 4) {
+            const luminance = (0.299 * imageData.data[offset])
+                + (0.587 * imageData.data[offset + 1])
+                + (0.114 * imageData.data[offset + 2]);
+            const value = Math.max(0, Math.min(255, (luminance - 35) * 1.45));
+            imageData.data[offset] = value;
+            imageData.data[offset + 1] = value;
+            imageData.data[offset + 2] = value;
         }
-        return uniqueLines(lines);
+        context.putImageData(imageData, 0, 0);
+        return canvas;
+    }
+
+    async function recognizeFiles(worker, files, label) {
+        const items = [];
+        for (let index = 0; index < files.length; index += 1) {
+            const crop = await prepareSpotifyCrop(files[index]);
+            status.textContent = `Reading ${label} ${index + 1} of ${files.length} · ${crop.dataset.layout} layout…`;
+            const result = await worker.recognize(crop, {}, { text: true, blocks: true });
+            let detectedLines = window.SpotifyOcr.linesFromBlocks(result.data.blocks);
+            if (!detectedLines.length) {
+                detectedLines = cleanOcrLines(result.data.text).map((text, lineIndex) => ({
+                    text,
+                    bbox: { y0: lineIndex * 100, y1: (lineIndex * 100) + 30 }
+                }));
+            }
+            items.push(...window.SpotifyOcr.pairSpotifyLines(detectedLines, crop.height, crop.width));
+        }
+        return uniqueLines(items);
     }
 
     function revealConfirmation() {
@@ -131,13 +208,18 @@
             status.textContent = 'Choose exactly 2 screenshots from each playlist.';
             return;
         }
-        if (!window.Tesseract) {
+        if ([...currentFiles, ...rewindFiles].some(file => file.size > 15 * 1024 * 1024)) {
+            status.textContent = 'One image is over 15 MB. Export a smaller PNG or JPG and try again.';
+            return;
+        }
+        if (!window.Tesseract || !window.SpotifyOcr) {
             status.textContent = 'The private scanner could not load. Type the playlist names below instead.';
             revealConfirmation();
             return;
         }
 
         scanButton.disabled = true;
+        document.querySelector('#scan-flow').setAttribute('aria-busy', 'true');
         let worker;
         try {
             worker = await window.Tesseract.createWorker('eng', 1, {
@@ -146,6 +228,11 @@
                         status.textContent = `Reading text… ${Math.round(event.progress * 100)}%`;
                     }
                 }
+            });
+            await worker.setParameters({
+                tessedit_pageseg_mode: '11',
+                preserve_interword_spaces: '1',
+                user_defined_dpi: '300'
             });
             setPlaylistItems('current', await recognizeFiles(worker, currentFiles, 'On Repeat'));
             setPlaylistItems('rewind', await recognizeFiles(worker, rewindFiles, 'Repeat Rewind'));
@@ -156,6 +243,7 @@
         } finally {
             if (worker) await worker.terminate();
             scanButton.disabled = false;
+            document.querySelector('#scan-flow').setAttribute('aria-busy', 'false');
             revealConfirmation();
         }
     });

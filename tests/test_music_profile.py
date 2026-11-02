@@ -61,6 +61,9 @@ class MusicProfileUnitTests(unittest.TestCase):
         low_rank = weighted_overlap(["Lorde", "SZA"], ["Mitski", "SZA"])
         self.assertGreater(high_rank, low_rank)
 
+    def test_weighted_overlap_is_bounded_at_one(self):
+        self.assertEqual(weighted_overlap(["SZA", "Lorde"], ["SZA", "Lorde"]), 1.0)
+
     def test_timeline_overlap_weights_rewind_more_than_current(self):
         base = {
             "current_items": ["Current song"], "rewind_items": ["Old favorite"],
@@ -82,8 +85,10 @@ class MusicProfileRouteTests(unittest.TestCase):
         self.assertIn(b"Scan my Spotify", response.data)
         self.assertIn(b"Build my taste stack", response.data)
         self.assertIn(b"Repeat Rewind", response.data)
-        self.assertIn(b"Choose exactly 2 screenshots", response.data)
+        self.assertIn(b"Choose 2 phone or computer screenshots", response.data)
+        self.assertIn(b"MOBILE OR DESKTOP", response.data)
         self.assertIn(b"current-editor", response.data)
+        self.assertIn(b"spotify-ocr.js", response.data)
 
     def test_confirmed_timeline_is_saved_and_receipt_is_rendered(self):
         response = self.client.post("/api/music-profile", json=SCAN_PAYLOAD)
