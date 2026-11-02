@@ -11,6 +11,7 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from match_lab import build_match_lab
 from music_profile import build_music_profile
 
 
@@ -329,6 +330,30 @@ def receipts():
         title="Your music fingerprint is ready.",
         currentTime=gmtime(),
     )
+
+
+@app.route("/match-lab")
+def match_lab_page():
+    try:
+        noise_percent = max(0, min(int(request.args.get("noise", "0")), 50))
+    except ValueError:
+        noise_percent = 0
+    respect_constraints = request.args.get("constraints", "1") != "0"
+    return render_template(
+        "match_lab.html",
+        title="Synthetic Match Lab",
+        lab=build_match_lab(noise_percent, respect_constraints),
+    )
+
+
+@app.route("/api/match-lab")
+def match_lab_api():
+    try:
+        noise_percent = max(0, min(int(request.args.get("noise", "0")), 50))
+    except ValueError:
+        noise_percent = 0
+    respect_constraints = request.args.get("constraints", "1") != "0"
+    return jsonify(build_match_lab(noise_percent, respect_constraints))
     
 
 @app.route("/about")

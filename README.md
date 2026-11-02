@@ -16,6 +16,14 @@ Participants choose one of two consistent routes:
 Both routes end with a matching preference and personalized receipt. Screenshot
 pixels are never posted to Flask; only confirmed text is saved.
 
+## Synthetic Match Lab
+
+Open `/match-lab` to exercise the scoring and cohort optimizer without touching
+MongoDB or using real participants. The lab includes eight fictional profiles,
+known expected pairs, mutual friend/partner eligibility, a complete score matrix,
+per-pair explanations, and deterministic 0–50% noise tests. The optimizer uses
+maximum-weight general-graph matching rather than the legacy matching script.
+
 The profile endpoint works in a local demo session without MongoDB. When a
 logged-in participant and `MONGO_URI` are present, the same confirmed profile is
 stored on their user record.

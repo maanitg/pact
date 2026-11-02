@@ -90,7 +90,7 @@ def weighted_overlap(left, right):
     total_weight = sum(1 / (1 + index) for index in range(len(left))) + sum(
         1 / (1 + index) for index in range(len(right))
     )
-    return round((2 * shared_weight) / total_weight, 4) if total_weight else 0.0
+    return round(shared_weight / total_weight, 4) if total_weight else 0.0
 
 
 def timeline_overlap(left_profile, right_profile):

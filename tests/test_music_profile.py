@@ -61,6 +61,9 @@ class MusicProfileUnitTests(unittest.TestCase):
         low_rank = weighted_overlap(["Lorde", "SZA"], ["Mitski", "SZA"])
         self.assertGreater(high_rank, low_rank)
 
+    def test_weighted_overlap_is_bounded_at_one(self):
+        self.assertEqual(weighted_overlap(["SZA", "Lorde"], ["SZA", "Lorde"]), 1.0)
+
     def test_timeline_overlap_weights_rewind_more_than_current(self):
         base = {
             "current_items": ["Current song"], "rewind_items": ["Old favorite"],
