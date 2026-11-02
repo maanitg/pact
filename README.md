@@ -8,9 +8,10 @@ requiring Spotify Web API approval.
 Participants choose one of two consistent routes:
 
 1. **Scan my Spotify:** upload exactly two On Repeat and two Repeat Rewind
-   screenshots. The browser crops away Spotify chrome, upscales the list, pairs
-   title/artist lines using OCR bounding boxes, and flags unpaired rows for
-   correction in a numbered mobile-friendly editor.
+   screenshots from Spotify mobile or desktop. The browser detects the layout,
+   crops to the useful title/artist column, caps oversized images for phone
+   memory, pairs lines using OCR geometry, and flags uncertain rows for
+   correction in a numbered responsive editor.
 2. **Build my taste stack:** choose exactly three forever artists, three current
    artists, and two wildcard artists without uploading anything.
 

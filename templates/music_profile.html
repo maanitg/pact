@@ -14,7 +14,7 @@
         <a href="/" class="nav-button">Home</a>
         <a href="/about" class="nav-button">About</a>
         <a href="/receipts" class="nav-button">Receipt</a>
-        <a href="/match-lab" class="nav-button">Match Lab</a>
+        <a href="/match" class="nav-button">Match</a>
     </nav>
     <div class="image-background"></div>
 
@@ -24,6 +24,9 @@
             <h1>FIND YOUR WAVELENGTH</h1>
             <p class="hero-copy">Scan the Spotify playlists that know you, or build an eight-artist taste stack in under a minute.</p>
             <div class="privacy-pill">Screenshots stay on this device. Only the names you confirm are saved.</div>
+            <ol class="journey-strip" aria-label="Profile progress">
+                <li><span>1</span>Choose</li><li><span>2</span>Capture</li><li><span>3</span>Review</li><li><span>4</span>Match</li>
+            </ol>
         </header>
 
         <section class="profile-card route-card" aria-labelledby="route-title">
@@ -51,25 +54,26 @@
             <section class="profile-card" aria-labelledby="directions-title">
                 <div class="section-heading">
                     <span class="step-number">2</span>
-                    <div><p class="eyebrow">IN SPOTIFY MOBILE</p><h2 id="directions-title">Capture your music timeline</h2></div>
+                    <div><p class="eyebrow">MOBILE OR DESKTOP</p><h2 id="directions-title">Capture your music timeline</h2></div>
                 </div>
                 <div class="instruction-grid">
                     <article class="instruction-card">
                         <div class="phone-visual"><div class="phone-notch"></div><div class="spotify-row"><span class="avatar-dot">⌕</span><span>On Repeat</span></div><div class="fake-row"></div><div class="fake-row short"></div></div>
-                        <strong>Search “On Repeat”</strong>
-                        <span>This is your current rotation. Open the playlist made for you.</span>
+                        <strong>Find both playlists</strong>
+                        <span>Search Spotify for “On Repeat” and “Repeat Rewind,” then open the playlists made for you.</span>
                     </article>
                     <article class="instruction-card">
                         <div class="phone-visual stats-visual"><div class="phone-notch"></div><b>On Repeat</b><ol><li>Song — Artist</li><li>Song — Artist</li><li>Song — Artist</li></ol></div>
-                        <strong>Take exactly 2 screenshots</strong>
-                        <span>Capture the first 10–15 tracks. Keep song and artist names visible.</span>
+                        <strong><span class="device-badge">PHONE</span> Take 2 screenshots</strong>
+                        <span>Keep each song and artist together. Scroll between shots with one row of overlap.</span>
                     </article>
                     <article class="instruction-card">
-                        <div class="phone-visual rewind-visual"><div class="phone-notch"></div><b>Repeat Rewind</b><ol><li>Older favorite</li><li>Older favorite</li><li>Older favorite</li></ol></div>
-                        <strong>Repeat for “Repeat Rewind”</strong>
-                        <span>This catches the favorites that survived more than one recent phase.</span>
+                        <div class="desktop-visual"><div class="desktop-toolbar"></div><div class="desktop-list"><i></i><i></i><i></i><i></i></div></div>
+                        <strong><span class="device-badge">COMPUTER</span> Take 2 screenshots</strong>
+                        <span>Use the full Spotify window. Keep the Title column visible; album and date columns are fine.</span>
                     </article>
                 </div>
+                <p class="capture-tip"><strong>For each playlist:</strong> upload two consecutive, uncropped screenshots. PNG, JPG, and WebP all work.</p>
             </section>
 
             <section class="profile-card" aria-labelledby="upload-title">
@@ -80,12 +84,12 @@
                 <div class="upload-grid">
                     <label class="upload-zone" id="current-zone">
                         <input id="current-images" type="file" multiple accept="image/png,image/jpeg,image/webp">
-                        <span class="upload-icon">＋</span><strong>On Repeat</strong><small>Choose exactly 2 screenshots</small>
+                        <span class="upload-icon">＋</span><strong>On Repeat</strong><small>Choose 2 phone or computer screenshots</small>
                         <div class="file-summary" id="current-summary"></div>
                     </label>
                     <label class="upload-zone" id="rewind-zone">
                         <input id="rewind-images" type="file" multiple accept="image/png,image/jpeg,image/webp">
-                        <span class="upload-icon">＋</span><strong>Repeat Rewind</strong><small>Choose exactly 2 screenshots</small>
+                        <span class="upload-icon">＋</span><strong>Repeat Rewind</strong><small>Choose 2 phone or computer screenshots</small>
                         <div class="file-summary" id="rewind-summary"></div>
                     </label>
                 </div>
@@ -93,7 +97,7 @@
                     <button type="button" id="scan-button">Read my screenshots</button>
                     <button type="button" id="manual-scan-button" class="secondary-button">Type the playlist instead</button>
                 </div>
-                <div id="scan-status" class="scan-status" role="status" aria-live="polite"></div>
+                <div id="scan-status" class="scan-status" role="status" aria-live="polite">We detect phone vs computer automatically. Reading happens in this browser.</div>
             </section>
 
             <section class="profile-card confirm-card" id="scan-confirm-section" aria-labelledby="confirm-title">
@@ -101,7 +105,7 @@
                     <span class="step-number">4</span>
                     <div><p class="eyebrow">QUICK SOUND CHECK</p><h2 id="confirm-title">Make sure we got you right</h2></div>
                 </div>
-                <p class="confirm-help">Each visible line becomes one editable row. Fix OCR mistakes and combine split song/artist lines as <strong>Song — Artist</strong>.</p>
+                <p class="confirm-help">Each visible track becomes one editable row. Amber rows need a quick check. Fix truncated names and keep the format <strong>Song — Artist</strong>.</p>
                 <div class="confirm-grid playlist-confirm-grid">
                     <article class="playlist-confirm-card current-card">
                         <header><span class="signal-dot"></span><div><strong>On Repeat</strong><small>Current rotation</small></div><span class="entry-total" id="current-total">0 items</span></header>

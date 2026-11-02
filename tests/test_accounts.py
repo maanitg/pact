@@ -101,6 +101,12 @@ class AccountFlowTests(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn("/?next=/music-profile", response.headers["Location"])
 
+    def test_account_entry_exposes_password_recovery_without_logging_form_data(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Forgot password?", response.data)
+        self.assertNotIn(b"Form data:", response.data)
+
     def test_logout_clears_session(self):
         with self.client.session_transaction() as login_session:
             login_session["user"] = "student@stanford.edu"

@@ -17,7 +17,7 @@
         <a href="/match" class="nav-button" data-link="match">Match</a>
     </nav>
 
-    <body>
+    <body class="home-page">
     
         <div class="image-background"></div>
         <!-- <div class="video-background">
@@ -46,7 +46,6 @@
                     {% if current_user or not accounts_enabled %}
                     <a class="homepageButton" href="/music-profile">{{ 'Build my music profile' if current_user else 'Try the music scan' }}</a>
                     {% endif %}
-                    <button id="forgotButton" style="display: none;">Forgot Password?</button>
                 </div>
             
            
@@ -61,6 +60,7 @@
                         <input type="password" id="password" name="password" placeholder="Enter your password" required>
                         <button type="submit">Log In</button>
                     </form>
+                    <button type="button" id="forgotButton" class="auth-switch">Forgot password?</button>
                     <p id="message"></p>
                 </div>
 
@@ -192,7 +192,7 @@
                     $('#forgotMessage').text("");    
                     $('#registerButton').show();
                     $('#loginForm').show();
-                    $('#forgotButton').hide();
+                    $('#forgotButton').show();
                     $('#forgotForm').hide();
                 });
 
@@ -226,8 +226,6 @@
 
                 $('#emailForm').submit(function(e) {
                     e.preventDefault();
-                    var formData = $(this).serialize();
-                    console.log("Form data:", formData);
                     $.ajax({
                         url: '/login',
                         type: 'POST',
@@ -252,8 +250,6 @@
 
                 $('#newEmailForm').submit(function(e) {
                     e.preventDefault();
-                    var formData = $(this).serialize();
-                    console.log("Form data:", formData);
                     $.ajax({
                         url: '/register',
                         type: 'POST',
@@ -273,8 +269,6 @@
 
                 $('#forgotPassForm').submit(function(e) {
                     e.preventDefault();
-                    var formData = $(this).serialize();
-                    console.log("Form data:", formData);
                     $.ajax({
                         url: '/forgot',
                         type: 'POST',

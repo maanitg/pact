@@ -85,7 +85,8 @@ class MusicProfileRouteTests(unittest.TestCase):
         self.assertIn(b"Scan my Spotify", response.data)
         self.assertIn(b"Build my taste stack", response.data)
         self.assertIn(b"Repeat Rewind", response.data)
-        self.assertIn(b"Choose exactly 2 screenshots", response.data)
+        self.assertIn(b"Choose 2 phone or computer screenshots", response.data)
+        self.assertIn(b"MOBILE OR DESKTOP", response.data)
         self.assertIn(b"current-editor", response.data)
         self.assertIn(b"spotify-ocr.js", response.data)
 

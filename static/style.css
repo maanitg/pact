@@ -677,6 +677,22 @@ label {
   background: #100d1b;
 }
 
+.music-profile-page .top-nav {
+  position: sticky;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0;
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  background: rgba(9, 7, 15, .92);
+  backdrop-filter: blur(16px);
+}
+
+.music-profile-page .nav-button {
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
 .music-profile-page .image-background {
   filter: brightness(.24) saturate(.8);
 }
@@ -724,6 +740,25 @@ label {
   color: #d9fff5;
   font-size: .9rem;
 }
+
+.journey-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  width: min(520px, 100%);
+  margin: 24px auto 0;
+  padding: 0;
+  list-style: none;
+  color: #bdb4c9;
+  font: 700 .72rem/1.2 "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.journey-strip li { position: relative; display: grid; gap: 7px; justify-items: center; }
+.journey-strip li::before { content: ''; position: absolute; top: 11px; right: 50%; width: 100%; height: 1px; background: #4c435a; }
+.journey-strip li:first-child::before { display: none; }
+.journey-strip span { z-index: 1; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #30283e; color: #d9fff5; }
+.journey-strip li:first-child span { background: #79f7d4; color: #130f20; }
 
 .profile-card {
   margin: 22px 0;
@@ -808,6 +843,42 @@ label {
   background: #373241;
 }
 
+.desktop-visual {
+  min-height: 150px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  border: 2px solid #48405e;
+  border-radius: 14px;
+  background: #0e0d13;
+}
+.desktop-toolbar { height: 28px; border-bottom: 1px solid #3b3547; background: #26222d; }
+.desktop-toolbar::before { content: '●  ●  ●'; display: block; padding: 8px 10px; color: #6e657a; font-size: .55rem; letter-spacing: .35em; }
+.desktop-list { display: grid; gap: 11px; padding: 18px 13px; }
+.desktop-list i { position: relative; display: block; width: 72%; height: 9px; margin-left: 28px; border-radius: 99px; background: #e8e5ec; }
+.desktop-list i::before { content: ''; position: absolute; left: -28px; top: -5px; width: 20px; height: 20px; border-radius: 4px; background: linear-gradient(145deg, #754a91, #2c7869); }
+.desktop-list i::after { content: ''; position: absolute; left: 0; top: 13px; width: 56%; height: 5px; border-radius: 99px; background: #77717f; }
+
+.device-badge {
+  display: inline-block;
+  margin-right: 5px;
+  padding: 4px 6px;
+  border-radius: 5px;
+  background: rgba(121,247,212,.13);
+  color: #9af9df;
+  font: 800 .62rem/1 "Courier New", monospace;
+  letter-spacing: .08em;
+  vertical-align: 2px;
+}
+
+.capture-tip {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.045);
+  color: #d8d1e2;
+  font: .94rem/1.45 "Helvetica Neue", Arial, sans-serif;
+}
+
 .spotify-row,
 .spotify-menu-item {
   display: flex;
@@ -888,6 +959,13 @@ label {
   background: linear-gradient(145deg, rgba(121,247,212,.14), rgba(126,82,180,.18));
   transform: translateY(-2px);
 }
+.route-choice:focus-visible,
+.upload-zone:focus-within,
+button:focus-visible,
+.nav-button:focus-visible {
+  outline: 3px solid rgba(121,247,212,.65);
+  outline-offset: 3px;
+}
 
 .route-choice strong { margin: auto 0 8px; font-size: 1.4rem; }
 .route-choice small { color: #d1c9dc; font-size: .95rem; }
@@ -952,6 +1030,8 @@ label {
   text-align: center;
   color: #b9fce9;
 }
+
+#scan-flow[aria-busy="true"] .upload-zone { opacity: .68; pointer-events: none; }
 
 .confirm-card { display: none; }
 .confirm-card.is-visible { display: block; }
@@ -1161,8 +1241,10 @@ label {
   .receipt-shell { width: min(100% - 20px, 620px); padding-top: 18px; }
   .profile-card { padding: 20px 14px; border-radius: 18px; }
   .instruction-grid { grid-template-columns: 1fr; }
-  .instruction-card { display: grid; grid-template-columns: 110px 1fr; align-items: center; }
-  .instruction-card .phone-visual { grid-row: span 2; min-height: 130px; }
+  .instruction-card { display: grid; grid-template-columns: 105px 1fr; align-items: center; padding: 12px; }
+  .instruction-card .phone-visual,
+  .instruction-card .desktop-visual { grid-row: span 2; min-height: 128px; }
+  .desktop-list { padding: 14px 8px; }
   .upload-grid,
   .confirm-grid { grid-template-columns: 1fr; }
   .route-grid { grid-template-columns: 1fr; }
@@ -1175,8 +1257,9 @@ label {
   .tag-input-row { grid-template-columns: 1fr; }
   .tag-input-row button { width: 100%; }
   .action-row > * { width: 100%; }
-  .music-profile-page .top-nav { padding: 13px 6px; }
-  .music-profile-page .nav-button { font-size: .95rem; }
+  .music-profile-page .top-nav { justify-content: space-around; padding: 6px 2px; }
+  .music-profile-page .nav-button { margin: 0; padding: 11px 9px; font-size: .9rem; }
+  .journey-strip { margin-top: 20px; font-size: .62rem; }
   .lab-shell { width: min(100% - 20px, 620px); padding-top: 18px; }
   .lab-controls form { grid-template-columns: 1fr; }
   .lab-metrics { grid-template-columns: repeat(2, 1fr); }
@@ -1184,4 +1267,79 @@ label {
   .lab-pair-card { padding: 17px 13px; }
   .lab-pair-card > header { align-items: flex-start; }
   .score-component { grid-template-columns: 100px 1fr 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+/* Responsive account entry; scoped to avoid changing the questionnaire. */
+.home-page {
+  min-height: 100%;
+  height: auto;
+  box-sizing: border-box;
+  padding: 78px 16px 30px;
+  overflow-x: hidden;
+}
+.home-page .top-nav { padding: 10px 0; margin: 0; }
+.home-page .verticalCenter {
+  width: min(920px, 100%);
+  min-height: calc(100vh - 108px);
+  height: auto;
+  box-sizing: border-box;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 30px 0;
+}
+.home-page .button-container {
+  width: 100%;
+  margin: 28px 0 12px;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.home-page .button-container form { width: auto; margin: 0; }
+.home-page #loginForm,
+.home-page #registerForm,
+.home-page #forgotForm {
+  width: min(460px, 100%);
+  box-sizing: border-box;
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 18px;
+  background: rgba(12, 9, 20, .88);
+  box-shadow: 0 22px 60px rgba(0,0,0,.35);
+}
+.home-page #loginForm h3,
+.home-page #registerForm h3,
+.home-page #forgotForm h3 { margin-top: 0; font-size: clamp(1.25rem, 4vw, 1.7rem); }
+.home-page input[type="email"],
+.home-page input[type="password"] { box-sizing: border-box; font-size: 16px; }
+.home-page #message,
+.home-page #registerMessage,
+.home-page #forgotMessage { min-height: 22px; }
+.home-page .auth-switch {
+  width: auto;
+  margin: 4px 0 0;
+  padding: 7px 10px;
+  border: 0;
+  background: transparent;
+  color: #9af9df;
+  font-size: .95rem;
+  text-decoration: underline;
+  box-shadow: none;
+}
+
+@media screen and (max-width: 760px) {
+  .home-page { padding: 68px 10px 18px; }
+  .home-page .top-nav { justify-content: space-around; padding: 6px 2px; }
+  .home-page .nav-button { margin: 0; padding: 11px 9px; font-size: .9rem; }
+  .home-page .verticalCenter { width: 100%; min-height: calc(100vh - 86px); padding: 22px 0; }
+  .home-page .button-container { flex-direction: column; gap: 8px; }
+  .home-page .button-container > *,
+  .home-page .button-container form,
+  .home-page .button-container form button { width: 100%; box-sizing: border-box; }
+  .home-page #loginForm,
+  .home-page #registerForm,
+  .home-page #forgotForm { padding: 18px 14px; }
 }
