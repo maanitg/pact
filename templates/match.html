@@ -1,116 +1,48 @@
+<!DOCTYPE html>
 <html lang="en">
-
-
-    <head>
-        <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    </head>
-
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match status · Wavelength</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="music-profile-page">
     <nav class="top-nav">
-        <a href="/" class="nav-button" data-link="home">Home</a>
-        <a href="/about" class="nav-button" data-link="about">About</a>
-        <a href="/receipts" class="nav-button" data-link="receipts">Receipts</a>
-        <a href="/match" class="nav-button" data-link="match">Match</a>
+        <a href="/" class="nav-button">Home</a>
+        <a href="/music-profile" class="nav-button">Music profile</a>
+        <a href="/receipts" class="nav-button">Receipt</a>
+        <a href="/match" class="nav-button">Match</a>
     </nav>
-    <body>
+    <main class="profile-shell">
+        <header class="profile-hero">
+            <p class="eyebrow">COHORT STATUS</p>
+            <h1>{{ cycle.name }}</h1>
+            <p>{{ cycle.message }}</p>
+        </header>
 
-        
+        <section class="profile-card">
+            <p class="eyebrow">{{ cycle.phase | upper }}</p>
+            {% if cycle.phase == 'planning' %}
+                <h2>Dates coming soon</h2>
+                <p>We will publish one signup deadline and one shared result time.</p>
+            {% else %}
+                <h2>A single, stable match drop</h2>
+                <p><strong>Signups lock:</strong> {{ cycle.deadline.strftime('%a, %d %b at %H:%M UTC') }}</p>
+                <p><strong>Results release:</strong> {{ cycle.release_at.strftime('%a, %d %b at %H:%M UTC') }}</p>
+            {% endif %}
 
-        <div class="image-background"></div>
-        <!-- <div class="video-background">
-            <video muted loop autoplay="autoplay" id="myVideo">
-                <source src="static/real_homepage.hevc.mp4" type="video/mp4; codecs=hvc1">
-                <source src="static/real_homepage.mp4" type="video/mp4; codecs=avc1">
-            </video>
-        </div> -->
-
-        <div class="dark-overlay"></div>
-
-
- 
-        <center>
-            <div class="verticalCenter2">
-                
-                <h3>Matches are coming...</h3>
-         
-            </div>
-            
-        </center>
-
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const videoBackground = document.querySelector('.video-background');
-                const video = document.getElementById('myVideo');
-                let frameCount = 0;
-                let lastTime = performance.now();
-                let freezeCount = 0;
-                
-                // Initially start with video
-                video.setAttribute('autoplay', '');
-                
-                // Function to switch to static background
-                function switchToStatic() {
-                    video.style.display = 'none';
-                    video.pause();
-                    videoBackground.style.backgroundImage = "url('static/homepage_pc.png')";
-                    videoBackground.style.backgroundSize = 'cover';
-                }
-                
-                // Function to monitor frame rate and page responsiveness
-                function checkPerformance() {
-                    const currentTime = performance.now();
-                    const timeDiff = currentTime - lastTime;
-                    
-                    // Check if frame time is too high (indicating lag)
-                    if (timeDiff > 100) { // More than 100ms between frames
-                        freezeCount++;
-                        if (freezeCount > 3) { // If we detect multiple freezes
-                            switchToStatic();
-                            return; // Stop monitoring once switched to static
-                        }
-                    } else {
-                        freezeCount = Math.max(0, freezeCount - 1); // Reduce freeze count if performance improves
-                    }
-                    
-                    lastTime = currentTime;
-                    frameCount++;
-                    
-                    requestAnimationFrame(checkPerformance);
-                }
-                
-                // Start performance monitoring
-                requestAnimationFrame(checkPerformance);
-                
-                // Also monitor for memory usage if available
-                if (window.performance && performance.memory) {
-                    setInterval(() => {
-                        if (performance.memory.usedJSHeapSize > performance.memory.jsHeapSizeLimit * 0.8) {
-                            switchToStatic();
-                        }
-                    }, 1000);
-                }
-
-                // Cleanup function for video elements
-                function cleanupVideo() {
-                    if (video) {
-                        video.pause();
-                        video.removeAttribute('src');
-                        video.load();
-                        video = null;
-                    }
-                    if (videoBackground) {
-                        videoBackground.innerHTML = '';
-                    }
-                }
-
-                // Add cleanup on page unload
-                window.addEventListener('unload', cleanupVideo);
-            });
-        </script>
-        
-    
-    </body>
+            {% if participant and not participant.get('_music_profile') %}
+                <p class="form-error">Your account is not eligible yet because your music profile is incomplete.</p>
+                <a class="button-link" href="/music-profile">Finish my profile</a>
+            {% elif cycle.phase == 'released' and match_name %}
+                <p class="eyebrow">YOUR MATCH</p>
+                <h2>{{ match_name }}</h2>
+            {% elif cycle.phase == 'released' %}
+                <p>No result is attached to your account for this cycle.</p>
+            {% else %}
+                <p>Once your profile is complete, you are in the cohort. Your pairing will not reshuffle when someone new signs up.</p>
+            {% endif %}
+        </section>
+    </main>
+</body>
 </html>

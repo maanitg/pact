@@ -36,9 +36,16 @@
                 <h1>WAVELENGTH</h1>
                 <h5>Stanford's Marriage Pact for Music Taste.</h5>
                 <div class="button-container">
+                    {% if current_user %}
+                    <a class="homepageButton" href="/form">Continue as {{ current_user.split('@')[0] }}</a>
+                    <form action="/logout" method="post"><button class="homepageButton" type="submit">Log out</button></form>
+                    {% else %}
                     <button class="homepageButton" id="loginButton">Login with Stanford Email</button>
                     <button class="homepageButton" id="registerButton">Register with Stanford Email</button>
-                    <a class="homepageButton" href="/music-profile">Try the music scan</a>
+                    {% endif %}
+                    {% if current_user or not accounts_enabled %}
+                    <a class="homepageButton" href="/music-profile">{{ 'Build my music profile' if current_user else 'Try the music scan' }}</a>
+                    {% endif %}
                     <button id="forgotButton" style="display: none;">Forgot Password?</button>
                 </div>
             
@@ -101,7 +108,8 @@
                     link.addEventListener('click', handleNavigation);
                 });
                 
-                // Initially start with video
+                // The video is optional; the current design uses the static background.
+                if (!video || !videoBackground) return;
                 video.setAttribute('autoplay', '');
                 
                 // Function to switch to static background
@@ -235,8 +243,9 @@
                                 $('#forgotButton').show();
                             }
                         },
-                        error: function() {
-                            $('#message').text('An error occurred. Please try again!!');
+                        error: function(xhr) {
+                            const message = xhr.responseJSON && xhr.responseJSON.message;
+                            $('#message').text(message || 'An error occurred. Please try again.');
                         }
                     });
                 });
@@ -255,8 +264,9 @@
                                 $('#newEmailForm').hide();
                             }
                         },
-                        error: function() {
-                            $('#registerMessage').text('An error occurred. Please try again!');
+                        error: function(xhr) {
+                            const message = xhr.responseJSON && xhr.responseJSON.message;
+                            $('#registerMessage').text(message || 'An error occurred. Please try again.');
                         }
                     });
                 });
@@ -272,8 +282,9 @@
                         success: function(response) {
                             $('#forgotMessage').text(response.message);
                         },
-                        error: function() {
-                            $('#forgotMessage').text('An error occurred. Please try again!');
+                        error: function(xhr) {
+                            const message = xhr.responseJSON && xhr.responseJSON.message;
+                            $('#forgotMessage').text(message || 'An error occurred. Please try again.');
                         }
                     });
                 });

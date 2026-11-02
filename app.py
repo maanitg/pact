@@ -1,7 +1,8 @@
 import hmac
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+from functools import wraps
 from time import gmtime
 
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
@@ -12,6 +13,7 @@ from pymongo.server_api import ServerApi
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from match_lab import build_match_lab
+from match_schedule import match_cycle
 from music_profile import build_music_profile
 
 
@@ -23,15 +25,21 @@ app.config.update(
     MAIL_USE_SSL=False,
     MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
     MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-    SESSION_PERMANENT=False,
+    PERMANENT_SESSION_LIFETIME=timedelta(
+        days=int(os.environ.get("SESSION_LIFETIME_DAYS", "30"))
+    ),
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true",
 )
+if os.environ.get("MONGO_URI") and not os.environ.get("SECRET_KEY"):
+    raise RuntimeError("Set SECRET_KEY whenever persistent accounts are enabled.")
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
 
 mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.secret_key)
+ACCOUNT_TOKEN_SALT = "wavelength-account-action-v1"
+ACCOUNT_TOKEN_MAX_AGE = int(os.environ.get("ACCOUNT_TOKEN_MAX_AGE", "3600"))
 
 
 def create_collection():
@@ -47,9 +55,11 @@ def create_collection():
         connectTimeoutMS=2000,
         serverSelectionTimeoutMS=3000,
     )
-    return client[os.environ.get("MONGO_DB", "tangle")][
+    collection = client[os.environ.get("MONGO_DB", "tangle")][
         os.environ.get("MONGO_COLLECTION", "users")
     ]
+    collection.create_index("email", unique=True, name="unique_account_email")
+    return collection
 
 
 coll = create_collection()
@@ -62,6 +72,96 @@ def database_required():
             message="Account services are not configured in this environment.",
         ), 503
     return None
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
+
+
+def stanford_email(value):
+    email = (value or "").strip().lower()
+    return email if email.endswith("@stanford.edu") else None
+
+
+def account_required(view):
+    """Require an account in deployed mode; keep the database-free demo usable."""
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if coll is not None and not session.get("user"):
+            if request.path.startswith("/api/"):
+                return jsonify(success=False, message="Please log in first."), 401
+            return redirect(url_for("index", next=request.path))
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+def begin_account_action(email, purpose):
+    action_id = uuid.uuid4().hex
+    token = serializer.dumps(
+        {"email": email, "purpose": purpose, "action_id": action_id},
+        salt=ACCOUNT_TOKEN_SALT,
+    )
+    coll.update_one(
+        {"email": email},
+        {
+            "$set": {
+                "email": email,
+                "_account_action_id": action_id,
+                "_account_action_purpose": purpose,
+                "_account_action_requested_on": utc_now(),
+            },
+            "$setOnInsert": {
+                "confirmed": False,
+                "created_on": utc_now(),
+                "_profile": 0,
+                "_stored": 0,
+            },
+        },
+        upsert=True,
+    )
+    return token
+
+
+def load_account_action(token):
+    payload = serializer.loads(
+        token, salt=ACCOUNT_TOKEN_SALT, max_age=ACCOUNT_TOKEN_MAX_AGE
+    )
+    if not isinstance(payload, dict):
+        raise ValueError("Invalid account action")
+    email = stanford_email(payload.get("email"))
+    purpose = payload.get("purpose")
+    action_id = payload.get("action_id")
+    if not email or purpose not in {"register", "reset"} or not action_id:
+        raise ValueError("Invalid account action")
+    user = coll.find_one(
+        {
+            "email": email,
+            "_account_action_id": action_id,
+            "_account_action_purpose": purpose,
+        }
+    )
+    if not user:
+        raise ValueError("Account action has already been used")
+    return payload, user
+
+
+def send_account_email(email, purpose, token):
+    action_url = url_for("confirm_email", token=token, _external=True)
+    subject = "Confirm your Wavelength account" if purpose == "register" else "Reset your Wavelength password"
+    verb = "finish creating your account" if purpose == "register" else "reset your password"
+    msg = Message(subject, sender=app.config["MAIL_USERNAME"], recipients=[email])
+    msg.body = f"Open this one-time link within one hour to {verb}: {action_url}"
+    mail.send(msg)
+
+
+def start_user_session(email):
+    session.clear()
+    session.permanent = True
+    session["user"] = email
+    session["session_id"] = str(uuid.uuid4())
+    user = coll.find_one({"email": email}, {"_stored": 1}) if coll is not None else None
+    session["stored"] = bool(user and user.get("_stored"))
 
 
 def get_current_music_profile():
@@ -87,49 +187,46 @@ def get_password_by_email(email):
 
 @app.route("/")
 def index():
-    return render_template('index.html', title='Welcome')
+    return render_template(
+        'index.html',
+        title='Welcome',
+        current_user=session.get("user"),
+        accounts_enabled=coll is not None,
+    )
 
 @app.route('/register', methods=['POST'])
 def register():
     unavailable = database_required()
     if unavailable:
         return unavailable
-    email = (request.form.get('registerEmail') or '').strip().lower()
-    if not email.endswith('@stanford.edu'):
+    email = stanford_email(request.form.get('registerEmail'))
+    if not email:
         return jsonify({'success': False, 'message': 'Please enter a Stanford email address.'})
-    token = serializer.dumps(email, salt='email-confirm')
-    if not coll.find_one({'email': email}):
-        confirm_url = url_for('confirm_email', token=token, _external=True)
-        if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
-            return jsonify({'success': False, 'message': 'Email delivery is not configured.'}), 503
-        msg = Message('Confirm Your Email', sender=app.config['MAIL_USERNAME'], recipients=[email])
-        msg.body = f'Click the following link to confirm your email: {confirm_url}'
-        mail.send(msg)
-        print("sending reg!")
-        return jsonify({'success': True, 'message': 'Please check your email to confirm your account.'})
-    else:
+    existing = coll.find_one({'email': email})
+    if existing and existing.get('confirmed') and existing.get('_password'):
         return jsonify({'success': False, 'message': 'Account already exists. Please log in.'})
+    if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
+        return jsonify({'success': False, 'message': 'Email delivery is not configured.'}), 503
+    token = begin_account_action(email, "register")
+    send_account_email(email, "register", token)
+    return jsonify({'success': True, 'message': 'Please check your email to confirm your account.'})
 
 @app.route('/forgot', methods=['POST'])
 def forgot_password():
     unavailable = database_required()
     if unavailable:
         return unavailable
-    email = (request.form.get('forgotEmail') or '').strip().lower()
-    if not email.endswith('@stanford.edu'):
+    email = stanford_email(request.form.get('forgotEmail'))
+    if not email:
         return jsonify({'success': False, 'message': 'Please enter your Stanford email address.'})
-    if not coll.find_one({'email': email}):
-        return jsonify({'success': False, 'message': 'Email not found. Register for new account.'})
-    else:
-        token = serializer.dumps(email, salt='email-confirm')
-        confirm_url = url_for('confirm_email', token=token, _external=True)
+    user = coll.find_one({'email': email, 'confirmed': True})
+    if user:
         if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
             return jsonify({'success': False, 'message': 'Email delivery is not configured.'}), 503
-        msg = Message('Reset Your Password', sender=app.config['MAIL_USERNAME'], recipients=[email])
-        msg.body = f'Click the following link to reset your password: {confirm_url}'
-        mail.send(msg)
-        print("sending!")
-        return jsonify({'success': True, 'message': 'Please check your email for password reset link.'})
+        token = begin_account_action(email, "reset")
+        send_account_email(email, "reset", token)
+    # Do not disclose whether a Stanford address has an account.
+    return jsonify({'success': True, 'message': 'If that account exists, a reset link is on its way.'})
 
 @app.route('/confirm_email/<token>')
 def confirm_email(token):
@@ -137,43 +234,47 @@ def confirm_email(token):
     if unavailable:
         return unavailable
     try:
-        email = serializer.loads(token, salt='email-confirm', max_age=3600)
+        payload, user = load_account_action(token)
     except Exception:
         return 'The confirmation link is invalid or has expired.', 400
-    
-
-    coll.update_one(
-        {"email": email},
-        {"$set": {"confirmed": True, "confirmed_on": datetime.now()}},
-        upsert=True
-    )
-    print(f"User confirmed with no issue: {email}")
-
-    
-    return render_template('set_password.html', email=email)
+    if payload["purpose"] == "register" and not user.get("confirmed"):
+        coll.update_one(
+            {"email": payload["email"]},
+            {"$set": {"confirmed": True, "confirmed_on": utc_now()}},
+        )
+    return render_template('set_password.html', action_token=token)
 
 
-@app.route('/set_password/', methods=['POST'])
+@app.route('/set_password', methods=['POST'])
 def set_password():
     unavailable = database_required()
     if unavailable:
         return unavailable
-    email = (request.form.get('setEmail') or '').strip().lower()
     password = request.form.get('password') or ''
     if len(password) < 10:
         return jsonify({'success': False, 'message': 'Use at least 10 characters.'}), 400
-    if coll.find_one({'email': email, 'confirmed': True}):
-        coll.update_one({ "email": email },
-        { "$set": { "_password": generate_password_hash(password) }  }
-        )
-        
-        session['user'] = email
-        session['stored'] = False
-        session['session_id'] = session.get('session_id', str(uuid.uuid4()))
-        #fixed session id
-        return jsonify({'success': True, 'message': 'Password set!'})
-    else:
-        return jsonify({'success': False, 'message': 'Invalid email address.'})
+    token = request.form.get('actionToken') or ''
+    try:
+        payload, user = load_account_action(token)
+    except Exception:
+        return jsonify({'success': False, 'message': 'This link is invalid, expired, or already used.'}), 400
+    if not user.get('confirmed'):
+        return jsonify({'success': False, 'message': 'Confirm your Stanford email first.'}), 400
+    result = coll.update_one(
+        {"email": payload["email"], "_account_action_id": payload["action_id"]},
+        {
+            "$set": {"_password": generate_password_hash(password), "password_changed_on": utc_now()},
+            "$unset": {
+                "_account_action_id": "",
+                "_account_action_purpose": "",
+                "_account_action_requested_on": "",
+            },
+        },
+    )
+    if not result.modified_count:
+        return jsonify({'success': False, 'message': 'This link has already been used.'}), 400
+    start_user_session(payload["email"])
+    return jsonify({'success': True, 'message': 'Password set!'})
     
     
     
@@ -184,10 +285,11 @@ def login():
     unavailable = database_required()
     if unavailable:
         return unavailable
-    email = (request.form.get('email') or '').strip().lower()
-    if not email.endswith('@stanford.edu'):
+    email = stanford_email(request.form.get('email'))
+    if not email:
         return jsonify({'success': False, 'message': 'Please enter a Stanford email address.'})
-    if not coll.find_one({'email': email}):
+    user = coll.find_one({'email': email, 'confirmed': True})
+    if not user:
         return jsonify({'success': False, 'message': 'Account does not exist. Please register.'})
     password = request.form.get('password') or ''
     p = get_password_by_email(email)
@@ -203,17 +305,16 @@ def login():
                 {'email': email},
                 {'$set': {'_password': generate_password_hash(password)}}
             )
-        session.clear()
-        session['user'] = email
-        session['stored'] = False
-        session['session_id'] = session.get('session_id', str(uuid.uuid4()))
-        
-        if coll.find_one({'email': session['user'], '_stored': 1}):
-            session['stored'] = True
-           
+        start_user_session(email)
         return jsonify({'success': True, 'message': 'Logged in!'})    
     else:
         return jsonify({'success': False, 'message': 'Incorrect password, try again.'})
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
 
 
 @app.route("/form")
@@ -237,6 +338,8 @@ def submit_form():
         return jsonify({"error": "Please log in before submitting the form."}), 401
     if coll is None:
         return jsonify({"error": "Account services are not configured."}), 503
+    if match_cycle()["phase"] in {"locked", "released"}:
+        return jsonify({"error": "This cohort is locked. Your changes can enter the next cycle."}), 409
     try:
         # Get JSON data from request
         data = request.get_json()  # Since we're sending JSON from the frontend
@@ -275,6 +378,7 @@ def loginSpotify():
 def redirectPage():
     return redirect(url_for("music_profile"), code=301)
 @app.route("/music-profile")
+@account_required
 def music_profile():
     return render_template(
         "music_profile.html",
@@ -284,7 +388,13 @@ def music_profile():
 
 
 @app.route("/api/music-profile", methods=["POST"])
+@account_required
 def save_music_profile():
+    if coll is not None and match_cycle()["phase"] in {"locked", "released"}:
+        return jsonify(
+            success=False,
+            message="This cohort is locked. Your changes can enter the next cycle.",
+        ), 409
     try:
         profile = build_music_profile(request.get_json(silent=True) or {})
     except ValueError as error:
@@ -318,6 +428,7 @@ def save_music_profile():
 
 
 @app.route("/receipts")
+@account_required
 def receipts():
     profile = get_current_music_profile()
     if not profile:
@@ -361,8 +472,34 @@ def about():
     return render_template('about.html')
 
 @app.route("/match")
+@account_required
 def match():
-    return render_template('match.html')
+    cycle = match_cycle()
+    participant = None
+    match_name = None
+    email = session.get("user")
+    if email and coll is not None:
+        participant = coll.find_one(
+            {"email": email},
+            {"_profile": 1, "_music_profile": 1, "_match": 1, "_match_cycle": 1},
+        )
+        if (
+            cycle["phase"] == "released"
+            and participant
+            and participant.get("_match")
+            and participant.get("_match_cycle") == cycle["name"]
+        ):
+            matched = coll.find_one(
+                {"email": participant["_match"]},
+                {"_firstname": 1, "_lastname": 1},
+            )
+            if matched:
+                match_name = " ".join(
+                    part for part in (matched.get("_firstname"), matched.get("_lastname")) if part
+                )
+    return render_template(
+        'match.html', cycle=cycle, participant=participant, match_name=match_name
+    )
 
 
 

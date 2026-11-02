@@ -59,7 +59,8 @@
                 let lastTime = performance.now();
                 let freezeCount = 0;
                 
-                // Initially start with video
+                // The video is optional; the current design uses the static background.
+                if (!video || !videoBackground) return;
                 video.setAttribute('autoplay', '');
                 
                 // Function to switch to static background
