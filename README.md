@@ -3,16 +3,18 @@
 An MVP for matching Stanford participants through their music taste without
 requiring Spotify Web API approval.
 
-## MVP participant journey
+## MVP participant journeys
 
-1. Complete the existing friend/partner questionnaire.
-2. Open Spotify's mobile **Listening stats** screen.
-3. Upload screenshots of Top artists and Top songs.
-4. The browser runs OCR locally with Tesseract.js. Screenshot pixels are not
-   posted to Flask.
-5. Correct the extracted names, add up to three enduring artists, and choose a
-   matching preference.
-6. Save the confirmed profile and view a personalized receipt.
+Participants choose one of two consistent routes:
+
+1. **Scan my Spotify:** upload On Repeat and Repeat Rewind screenshots, let the
+   browser run OCR locally, correct the extracted names, and add three forever
+   artists.
+2. **Build my taste stack:** choose exactly three forever artists, three current
+   artists, and two wildcard artists without uploading anything.
+
+Both routes end with a matching preference and personalized receipt. Screenshot
+pixels are never posted to Flask; only confirmed text is saved.
 
 The profile endpoint works in a local demo session without MongoDB. When a
 logged-in participant and `MONGO_URI` are present, the same confirmed profile is
@@ -22,14 +24,16 @@ stored on their user record.
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
-python app.py
+& ".\.venv\Scripts\python.exe" -m pip install -r requirements.txt
+$env:SECRET_KEY = & ".\.venv\Scripts\python.exe" -c "import secrets; print(secrets.token_urlsafe(48))"
+$env:SESSION_COOKIE_SECURE = "false"
+& ".\.venv\Scripts\python.exe" app.py
 ```
 
-Set the variables from `.env.example` through your deployment environment. The
-app intentionally contains no production credentials.
+No MongoDB or mail configuration is required for the local profile demo. Set
+real values from `.env.example` through the production deployment environment;
+do not copy its placeholders unchanged. The app intentionally contains no
+production credentials.
 
 ## Tests
 
@@ -39,6 +43,7 @@ python -m unittest discover -s tests -v
 
 ## Current MVP boundary
 
-The pull request covers music-profile capture, correction, persistence, and the
-receipt. A production batch matcher, screenshot-layout-specific OCR tuning, data
-export ingestion, and locally bundled OCR assets are follow-up work.
+The pull request covers two-lane music-profile capture, correction, persistence,
+timeline-weighted scoring primitives, and the receipt. A production batch
+matcher, screenshot-layout-specific OCR tuning, data-export ingestion, and
+locally bundled OCR assets are follow-up work.

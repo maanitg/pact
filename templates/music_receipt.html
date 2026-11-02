@@ -17,9 +17,9 @@
 
     <main class="receipt-shell">
         <header class="profile-hero compact-hero">
-            <p class="eyebrow">SCAN COMPLETE</p>
+            <p class="eyebrow">PROFILE COMPLETE</p>
             <h1>YOUR SONIC FINGERPRINT</h1>
-            <p class="hero-copy">Built from your recent Spotify stats, then corrected by you.</p>
+            <p class="hero-copy">Built from current energy, enduring favorites, and the artists that feel like you.</p>
         </header>
 
         <article class="music-receipt">
@@ -28,9 +28,48 @@
                 <h2>MUSIC PROFILE</h2>
                 <div class="receipt-rule"></div>
                 <p>ORDER FOR {{ user_display_name | upper }}</p>
-                <p>WINDOW: RECENT LISTENING + CORE PICKS</p>
+                <p>METHOD: {{ (profile.capture_mode | default('legacy_profile', true)) | replace('_', ' ') | upper }}</p>
             </header>
 
+            {% if profile.capture_mode == 'spotify_scan' %}
+            <section>
+                <div class="receipt-row receipt-header"><span>RANK</span><span>ON REPEAT</span></div>
+                {% for track in profile.current_items[:10] %}
+                    <div class="receipt-row"><span>{{ "%02d" | format(loop.index) }}</span><strong>{{ track }}</strong></div>
+                {% endfor %}
+            </section>
+            <div class="receipt-rule"></div>
+            <section>
+                <div class="receipt-row receipt-header"><span>RANK</span><span>REPEAT REWIND</span></div>
+                {% for track in profile.rewind_items[:10] %}
+                    <div class="receipt-row"><span>{{ "%02d" | format(loop.index) }}</span><strong>{{ track }}</strong></div>
+                {% endfor %}
+            </section>
+            {% else %}
+            <section>
+                <div class="receipt-row receipt-header"><span>TYPE</span><span>ARTIST STACK</span></div>
+                {% for artist in profile.forever_artists %}
+                    <div class="receipt-row"><span>∞</span><strong>{{ artist }}</strong></div>
+                {% endfor %}
+                {% for artist in profile.current_artists %}
+                    <div class="receipt-row"><span>NOW</span><strong>{{ artist }}</strong></div>
+                {% endfor %}
+                {% for artist in profile.wildcard_artists %}
+                    <div class="receipt-row"><span>WILD</span><strong>{{ artist }}</strong></div>
+                {% endfor %}
+            </section>
+            {% endif %}
+
+            {% if profile.forever_artists and profile.capture_mode == 'spotify_scan' %}
+                <div class="receipt-rule"></div>
+                <section>
+                    <p class="receipt-label">FOREVER ARTISTS</p>
+                    <p class="core-list">{{ profile.forever_artists | join(' • ') }}</p>
+                </section>
+            {% endif %}
+
+            {# Compatibility fallback for profiles saved before version 2. #}
+            {% if not profile.capture_mode %}
             <section>
                 <div class="receipt-row receipt-header"><span>RANK</span><span>TOP ARTIST</span></div>
                 {% for artist in profile.top_artists[:10] %}
@@ -39,7 +78,6 @@
                     <div class="receipt-row"><span>—</span><span>No artists supplied</span></div>
                 {% endfor %}
             </section>
-
             <div class="receipt-rule"></div>
             <section>
                 <div class="receipt-row receipt-header"><span>RANK</span><span>TOP SONG</span></div>
@@ -49,19 +87,12 @@
                     <div class="receipt-row"><span>—</span><span>No songs supplied</span></div>
                 {% endfor %}
             </section>
-
-            {% if profile.core_artists %}
-                <div class="receipt-rule"></div>
-                <section>
-                    <p class="receipt-label">CORE YOU</p>
-                    <p class="core-list">{{ profile.core_artists | join(' • ') }}</p>
-                </section>
             {% endif %}
 
             <div class="receipt-rule"></div>
             <footer>
                 <p>MATCH MODE: {{ profile.taste_mode | upper }}</p>
-                <p>PROFILE CONFIDENCE: MVP / RECENT WINDOW</p>
+                <p>PROFILE CONFIDENCE: TIMELINE MVP</p>
                 <img src="{{ url_for('static', filename='barcode.png') }}" alt="Decorative barcode">
                 <strong>THANK YOU FOR SHARING YOUR WAVELENGTH</strong>
             </footer>

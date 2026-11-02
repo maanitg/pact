@@ -299,7 +299,9 @@ def save_music_profile():
             {
                 "$set": {
                     "_music_profile": profile,
-                    "_short_tracks": profile["top_tracks"],
+                    "_short_tracks": profile["current_items"],
+                    "_long_tracks": profile["rewind_items"],
+                    "_long_art": profile["forever_artists"],
                     "_med_art": profile["top_artists"],
                     "_stored": 1,
                 },

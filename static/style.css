@@ -846,6 +846,11 @@ label {
   color: #fff;
 }
 
+.rewind-visual {
+  background: linear-gradient(145deg, #1f6e68, #4d296c);
+  color: #fff;
+}
+
 .stats-visual ol {
   margin: 12px 0 0;
   padding-left: 26px;
@@ -856,6 +861,44 @@ label {
   display: inline-block;
   margin-top: 18px;
   color: #9af9df;
+}
+
+.route-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.route-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 190px;
+  padding: 24px;
+  border: 2px solid #514762;
+  border-radius: 20px;
+  background: #211b32;
+  color: #f8f5ff;
+  text-align: left;
+}
+
+.route-choice:hover,
+.route-choice.is-active {
+  border-color: #79f7d4;
+  background: linear-gradient(145deg, rgba(121,247,212,.14), rgba(126,82,180,.18));
+  transform: translateY(-2px);
+}
+
+.route-choice strong { margin: auto 0 8px; font-size: 1.4rem; }
+.route-choice small { color: #d1c9dc; font-size: .95rem; }
+.route-choice > span:last-child { margin-top: 12px; color: #9af9df; font-size: .82rem; }
+.route-badge {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(121,247,212,.13);
+  color: #9af9df;
+  font: 800 .68rem/1 "Courier New", monospace;
+  letter-spacing: .1em;
 }
 
 .upload-grid { grid-template-columns: repeat(2, 1fr); }
@@ -885,6 +928,8 @@ label {
 .upload-zone.has-image > :not(input):not(img) { display: none; }
 .upload-icon { font-size: 2.5rem; color: #79f7d4; }
 .upload-zone small { color: #a9a0b8; }
+.upload-zone.has-files { border-color: #79f7d4; background: rgba(121,247,212,.08); }
+.file-summary { min-height: 20px; color: #9af9df; font-weight: 800; }
 
 .action-row,
 .receipt-actions {
@@ -917,6 +962,35 @@ label {
 .full-label small { display: block; margin: 3px 0 8px; color: #bdb4c9; font-weight: 400; }
 .confirm-grid textarea { min-height: 190px; resize: vertical; box-sizing: border-box; }
 .full-label { margin-top: 20px; }
+
+.picker-intro { margin: -8px 0 22px; color: #d1c9dc; }
+.stack-grid { display: grid; gap: 16px; }
+.tag-builder {
+  position: relative;
+  padding: 20px;
+  border: 1px solid #514762;
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+}
+.tag-builder.is-complete { border-color: rgba(121,247,212,.65); }
+.tag-copy { display: flex; flex-direction: column; margin-right: 54px; }
+.tag-copy strong { font-size: 1.08rem; }
+.tag-copy small { margin-top: 3px; color: #bdb4c9; }
+.tag-input-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 14px; }
+.tag-input-row input { margin: 0; }
+.tag-input-row button { min-width: 74px; padding: 10px 14px; }
+.tag-count { position: absolute; top: 20px; right: 20px; color: #9af9df; font: 800 .8rem/1 "Courier New", monospace; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 10px; margin-top: 12px; }
+.artist-tag {
+  width: auto;
+  padding: 8px 11px;
+  border: 1px solid rgba(121,247,212,.4);
+  border-radius: 999px;
+  background: rgba(121,247,212,.12);
+  color: #eafff9;
+  font-size: .88rem;
+}
+.artist-tag:hover { background: rgba(255,120,155,.16); border-color: #ff9bb3; }
 
 .taste-fieldset {
   display: grid;
@@ -965,7 +1039,11 @@ label {
   .instruction-card .phone-visual { grid-row: span 2; min-height: 130px; }
   .upload-grid,
   .confirm-grid { grid-template-columns: 1fr; }
+  .route-grid { grid-template-columns: 1fr; }
+  .route-choice { min-height: 160px; }
   .upload-zone { min-height: 190px; }
+  .tag-input-row { grid-template-columns: 1fr; }
+  .tag-input-row button { width: 100%; }
   .action-row > * { width: 100%; }
   .music-profile-page .top-nav { padding: 13px 6px; }
   .music-profile-page .nav-button { font-size: .95rem; }
