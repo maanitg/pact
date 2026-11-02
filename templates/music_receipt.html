@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="music-profile-page receipt-page">
+    <nav class="top-nav">
+        <a href="/" class="nav-button">Home</a>
+        <a href="/music-profile" class="nav-button">Edit profile</a>
+        <a href="/receipts" class="nav-button">Receipt</a>
+        <a href="/match" class="nav-button">Match</a>
+    </nav>
+    <div class="image-background"></div>
+
+    <main class="receipt-shell">
+        <header class="profile-hero compact-hero">
+            <p class="eyebrow">SCAN COMPLETE</p>
+            <h1>YOUR SONIC FINGERPRINT</h1>
+            <p class="hero-copy">Built from your recent Spotify stats, then corrected by you.</p>
+        </header>
+
+        <article class="music-receipt">
+            <header>
+                <p class="receipt-kicker">WAVELENGTH RECORDS</p>
+                <h2>MUSIC PROFILE</h2>
+                <div class="receipt-rule"></div>
+                <p>ORDER FOR {{ user_display_name | upper }}</p>
+                <p>WINDOW: RECENT LISTENING + CORE PICKS</p>
+            </header>
+
+            <section>
+                <div class="receipt-row receipt-header"><span>RANK</span><span>TOP ARTIST</span></div>
+                {% for artist in profile.top_artists[:10] %}
+                    <div class="receipt-row"><span>{{ "%02d" | format(loop.index) }}</span><strong>{{ artist }}</strong></div>
+                {% else %}
+                    <div class="receipt-row"><span>—</span><span>No artists supplied</span></div>
+                {% endfor %}
+            </section>
+
+            <div class="receipt-rule"></div>
+            <section>
+                <div class="receipt-row receipt-header"><span>RANK</span><span>TOP SONG</span></div>
+                {% for track in profile.top_tracks[:10] %}
+                    <div class="receipt-row"><span>{{ "%02d" | format(loop.index) }}</span><strong>{{ track }}</strong></div>
+                {% else %}
+                    <div class="receipt-row"><span>—</span><span>No songs supplied</span></div>
+                {% endfor %}
+            </section>
+
+            {% if profile.core_artists %}
+                <div class="receipt-rule"></div>
+                <section>
+                    <p class="receipt-label">CORE YOU</p>
+                    <p class="core-list">{{ profile.core_artists | join(' • ') }}</p>
+                </section>
+            {% endif %}
+
+            <div class="receipt-rule"></div>
+            <footer>
+                <p>MATCH MODE: {{ profile.taste_mode | upper }}</p>
+                <p>PROFILE CONFIDENCE: MVP / RECENT WINDOW</p>
+                <img src="{{ url_for('static', filename='barcode.png') }}" alt="Decorative barcode">
+                <strong>THANK YOU FOR SHARING YOUR WAVELENGTH</strong>
+            </footer>
+        </article>
+
+        <div class="receipt-actions">
+            <a class="button-link secondary-button" href="/music-profile">Correct my profile</a>
+            <a class="button-link" href="/match">Continue to matching</a>
+        </div>
+    </main>
+</body>
+</html>

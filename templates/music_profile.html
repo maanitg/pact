@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script defer src="{{ url_for('static', filename='music-profile.js') }}"></script>
+</head>
+<body class="music-profile-page">
+    <nav class="top-nav">
+        <a href="/" class="nav-button">Home</a>
+        <a href="/about" class="nav-button">About</a>
+        <a href="/receipts" class="nav-button">Receipt</a>
+        <a href="/match" class="nav-button">Match</a>
+    </nav>
+
+    <div class="image-background"></div>
+    <main class="profile-shell">
+        <header class="profile-hero">
+            <p class="eyebrow">YOUR SOUND, WITHOUT THE SPOTIFY LOGIN</p>
+            <h1>SCAN YOUR TASTE</h1>
+            <p class="hero-copy">Two screenshots. One minute. A music profile that actually feels like you.</p>
+            <div class="privacy-pill">Your screenshots stay on this device. Only names you confirm are saved.</div>
+        </header>
+
+        <section class="profile-card" aria-labelledby="directions-title">
+            <div class="section-heading">
+                <span class="step-number">1</span>
+                <div>
+                    <p class="eyebrow">IN SPOTIFY MOBILE</p>
+                    <h2 id="directions-title">Take two screenshots</h2>
+                </div>
+            </div>
+
+            <div class="instruction-grid">
+                <article class="instruction-card">
+                    <div class="phone-visual">
+                        <div class="phone-notch"></div>
+                        <div class="spotify-row">
+                            <span class="avatar-dot">1</span>
+                            <span>Tap your picture</span>
+                        </div>
+                        <div class="fake-row"></div><div class="fake-row short"></div>
+                    </div>
+                    <strong>Open Spotify</strong>
+                    <span>Tap your profile picture in the top-left.</span>
+                </article>
+                <article class="instruction-card">
+                    <div class="phone-visual">
+                        <div class="phone-notch"></div>
+                        <div class="spotify-menu-item">Listening stats <b>›</b></div>
+                        <div class="fake-row"></div><div class="fake-row short"></div>
+                    </div>
+                    <strong>Open Listening stats</strong>
+                    <span>It is in the profile menu on mobile.</span>
+                </article>
+                <article class="instruction-card">
+                    <div class="phone-visual stats-visual">
+                        <div class="phone-notch"></div>
+                        <b>Top artists</b>
+                        <ol><li>Your #1</li><li>Your #2</li><li>Your #3</li></ol>
+                    </div>
+                    <strong>Capture both lists</strong>
+                    <span>Screenshot Top artists and Top songs.</span>
+                </article>
+            </div>
+            <a class="quiet-link" href="https://support.spotify.com/us/article/listening-stats/" target="_blank" rel="noreferrer">Open Spotify's official directions ↗</a>
+        </section>
+
+        <section class="profile-card" aria-labelledby="upload-title">
+            <div class="section-heading">
+                <span class="step-number">2</span>
+                <div>
+                    <p class="eyebrow">BACK HERE</p>
+                    <h2 id="upload-title">Drop in your screenshots</h2>
+                </div>
+            </div>
+
+            <div class="upload-grid">
+                <label class="upload-zone" id="artists-zone">
+                    <input id="artists-image" type="file" accept="image/png,image/jpeg,image/webp">
+                    <img alt="Top artists screenshot preview" id="artists-preview">
+                    <span class="upload-icon">＋</span>
+                    <strong>Top artists</strong>
+                    <small>PNG, JPG, or WebP</small>
+                </label>
+                <label class="upload-zone" id="tracks-zone">
+                    <input id="tracks-image" type="file" accept="image/png,image/jpeg,image/webp">
+                    <img alt="Top songs screenshot preview" id="tracks-preview">
+                    <span class="upload-icon">＋</span>
+                    <strong>Top songs</strong>
+                    <small>PNG, JPG, or WebP</small>
+                </label>
+            </div>
+
+            <div class="action-row">
+                <button type="button" id="scan-button">Read my screenshots</button>
+                <button type="button" id="manual-button" class="secondary-button">Enter them manually</button>
+            </div>
+            <div id="scan-status" class="scan-status" role="status" aria-live="polite"></div>
+        </section>
+
+        <section class="profile-card confirm-card" id="confirm-section" aria-labelledby="confirm-title">
+            <div class="section-heading">
+                <span class="step-number">3</span>
+                <div>
+                    <p class="eyebrow">QUICK SOUND CHECK</p>
+                    <h2 id="confirm-title">Make sure we got you right</h2>
+                </div>
+            </div>
+
+            <div class="confirm-grid">
+                <label>
+                    Top artists <small>one per line, ranked</small>
+                    <textarea id="top-artists" rows="8" placeholder="Chappell Roan&#10;Frank Ocean&#10;The Strokes">{% if existing_profile %}{{ existing_profile.top_artists | join('\n') }}{% endif %}</textarea>
+                </label>
+                <label>
+                    Top songs <small>one per line, ranked</small>
+                    <textarea id="top-tracks" rows="8" placeholder="Good Luck, Babe! — Chappell Roan&#10;Pink + White — Frank Ocean">{% if existing_profile %}{{ existing_profile.top_tracks | join('\n') }}{% endif %}</textarea>
+                </label>
+            </div>
+
+            <label class="full-label">
+                Three artists that are core you <small>These correct for a weird recent month.</small>
+                <input id="core-artists" type="text" placeholder="Artist one, artist two, artist three" value="{% if existing_profile %}{{ existing_profile.core_artists | join(', ') }}{% endif %}">
+            </label>
+
+            <fieldset class="taste-fieldset">
+                <legend>What kind of music match sounds best?</legend>
+                <label><input type="radio" name="taste-mode" value="similar" {% if existing_profile and existing_profile.taste_mode == 'similar' %}checked{% endif %}> Someone on my exact wavelength</label>
+                <label><input type="radio" name="taste-mode" value="balanced" {% if not existing_profile or existing_profile.taste_mode == 'balanced' %}checked{% endif %}> Familiar overlap with a few surprises</label>
+                <label><input type="radio" name="taste-mode" value="discovery" {% if existing_profile and existing_profile.taste_mode == 'discovery' %}checked{% endif %}> Someone who opens a new musical world</label>
+            </fieldset>
+
+            <p class="form-error" id="form-error" role="alert"></p>
+            <button type="button" id="save-profile">Make my music receipt</button>
+        </section>
+    </main>
+</body>
+</html>
