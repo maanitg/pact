@@ -6,6 +6,7 @@
     <title>{{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script defer src="{{ url_for('static', filename='spotify-ocr.js') }}"></script>
     <script defer src="{{ url_for('static', filename='music-profile.js') }}"></script>
 </head>
 <body class="music-profile-page">

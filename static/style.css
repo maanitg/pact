@@ -1022,6 +1022,8 @@ label {
 }
 .playlist-entry input::placeholder { color: #776d84; -webkit-text-fill-color: #776d84; }
 .playlist-entry input:focus { border-color: #79f7d4; background: #211a2d; outline: 3px solid rgba(121,247,212,.12); }
+.playlist-entry.needs-review input { border-color: #ffb35c; background: rgba(94,55,20,.25); }
+.playlist-entry.needs-review .entry-number { color: #ffcc8f; }
 .remove-entry {
   width: 42px;
   min-height: 42px;
